@@ -1,6 +1,5 @@
-# bot_tg_aiogram_olshop
-
-with aiogram
+# Telegram Bot Olshop
+sell your product with this bot
 
 ### DEPEDENCY
 - install pipenv with `python3 -m xpip install pipenv` 

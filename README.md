@@ -1,8 +1,10 @@
 # Telegram Bot Olshop
 sell your product with this bot
 
-### DEPEDENCY
+### DEPEDENCIES
+- create table schema `mysql -u root -p < schema.sql`
 - install pipenv with `python3 -m pip install pipenv` 
+- run `pipenv shell`
 - run `pipenv install`
 - run `python main` 
 

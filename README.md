@@ -2,7 +2,7 @@
 sell your product with this bot
 
 ### DEPEDENCY
-- install pipenv with `python3 -m xpip install pipenv` 
+- install pipenv with `python3 -m pip install pipenv` 
 - run `pipenv install`
 - run `python main` 
 

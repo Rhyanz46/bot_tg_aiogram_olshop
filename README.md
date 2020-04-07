@@ -8,7 +8,7 @@ sell your product with this bot
 
 ### env conf
 
-create .env file on folder and write your config with this format 
+create `.env` file on folder and write your config with this format 
 ```.env
 DATABASE_USER=""
 DATABASE_PW=""

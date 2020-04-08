@@ -73,6 +73,10 @@ async def inline_kb_answer_callback_handler(query: types.CallbackQuery):
 
 @dp.callback_query_handler(text='buy_sp_reg')  # if cb.data == 'no'
 @dp.callback_query_handler(text='buy_sp_data')  # if cb.data == 'yes'
+@dp.callback_query_handler(text='voucher_fisik')  # if cb.data == 'yes'
+@dp.callback_query_handler(text='linkaja')  # if cb.data == 'yes'
+@dp.callback_query_handler(text='mkios')  # if cb.data == 'yes'
+@dp.callback_query_handler(text='bulk')  # if cb.data == 'yes'
 async def order_callback_handler(query: types.CallbackQuery):
     registered: bool = await is_registered(query.from_user.id)
     if not registered:
@@ -91,8 +95,13 @@ async def order_callback_handler(query: types.CallbackQuery):
                 reply_markup=types.ReplyKeyboardRemove()
             )
         else:
-            text = f'Unexpected callback data {answer_data!r}!'
-            await bot.send_message(query.from_user.id, text)
+            await query.message.answer(
+                "Fitur Belanjunya belum jadi mas, wkwkw 🤣",
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+            # 272474818
+            # text = f'Unexpected callback data {answer_data!r}!'
+            # await bot.send_message(query.from_user.id, text)
 
 
 @dp.message_handler()
@@ -109,10 +118,22 @@ async def all_message_handler(message: types.Message):
         if not registered:
             await message.reply("Kamu Belum Terdaftar 😝", reply_markup=types.ReplyKeyboardRemove())
         else:
-            keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+            keyboard_markup = types.InlineKeyboardMarkup(row_width=3)
             text_and_data = (
                 ('SP Reg', 'buy_sp_reg'),
                 ('SP Data', 'buy_sp_data'),
+            )
+            row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
+            keyboard_markup.row(*row_btns)
+            text_and_data = (
+                ('Voucher Fisik', 'voucher_fisik'),
+                ('LinkAja', 'linkaja'),
+            )
+            row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
+            keyboard_markup.row(*row_btns)
+            text_and_data = (
+                ('Mkios', 'mkios'),
+                ('Bulk', 'bulk'),
             )
             row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
             keyboard_markup.row(*row_btns)

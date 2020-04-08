@@ -17,5 +17,6 @@ async def is_registered(id_user: int) -> bool:
     cursor = cnx.cursor(buffered=True)
     cursor.execute(f"SELECT telegram_id FROM user where telegram_id={id_user}")
     if cursor.fetchone():
+        # cnx.close()
         return True
     return False

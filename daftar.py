@@ -12,6 +12,7 @@ async def add_user(user: dict):
     cursor.execute(query, user)
     print(user)
     cnx.commit()
+    # cnx.close()
 
 
 async def menu(message: types.Message):
@@ -39,15 +40,27 @@ async def formulir_daftar(message: types.Message):
                 karakter = kabupaten[regex_special_character.search(kabupaten).span()[0]]
                 valid = False
                 await message.answer(f"Kabupaten tidak boleh memiliki special karakter {karakter}")
+            if len(kabupaten.strip()) > 149:
+                valid = False
+                await message.answer(f"Kabupaten tidak boleh lebih dari 149 karakter")
             form_data["kabupaten"] = kabupaten.strip().lower()
         if 'Kecamatan' in item:
             kecamatan = item.replace('Kecamatan : ', '')
+            if len(kecamatan.strip()) > 149:
+                valid = False
+                await message.answer(f"Kecamatan tidak boleh lebih dari 149 karakter")
             form_data["kecamatan"] = kecamatan.strip().lower()
         if 'Nama Outlet' in item:
             nama_oulet = item.replace('Nama Outlet : ', '')
+            if len(nama_oulet.strip()) > 149:
+                valid = False
+                await message.answer(f"Nama Outlet tidak boleh lebih dari 149 karakter")
             form_data["nama_outlet"] = nama_oulet.strip()
         if 'Nomor MKios' in item:
             nomor_mkios = item.replace('Nomor MKios : ', '')
+            if len(nomor_mkios.strip()) > 29:
+                valid = False
+                await message.answer(f"Nomor MKios tidak boleh lebih dari 29 karakter")
             try:
                 nomor_mkios = int(nomor_mkios.strip())
             except:
@@ -60,7 +73,7 @@ async def formulir_daftar(message: types.Message):
         await message.answer(f"Pastikan data anda benar")
     else:
         await add_user(form_data)
-        await message.answer(f"Terimakasih {message.from_user.first_name}, Anda sudah terdaftar :) ")
+        await message.answer(f"Terimakasih {message.from_user.first_name}, Pendaftaran Anda Berhasil :) ")
         await menu(message)
 
 

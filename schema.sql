@@ -7,7 +7,7 @@ CREATE TABLE user(
     kabupaten VARCHAR(150) NOT NULL ,
     kecamatan VARCHAR(150) NOT NULL ,
     nama_outlet VARCHAR(150) NOT NULL ,
-    nomor_mkios VARCHAR(30) NOT NULL ,
+    nomor_mkios BIGINT(30) NOT NULL ,
     tgl_registrasi DATE NOT NULL
 );
 

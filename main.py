@@ -1,6 +1,18 @@
-from core import bot, dp, is_registered
+from core import bot, dp, is_registered, goods
 from aiogram import executor, types
 from daftar import formulir_daftar, daftar, menu
+from buy import do_buy, select_menu
+
+from aiogram.dispatcher.filters.state import State, StatesGroup
+
+
+class UserForm(StatesGroup):
+    name = State()  # Will be represented in storage as 'Form:name'
+    age = State()  # Will be represented in storage as 'Form:age'
+    gender = State()  # Will be represented in storage as 'Form:gender'
+
+
+user_form = UserForm()
 
 
 @dp.message_handler(commands='help')
@@ -30,8 +42,6 @@ async def register_cmd_handler(message: types.Message):
 
 @dp.message_handler(commands='start')
 async def start_cmd_handler(message: types.Message):
-    # default row_width is 3, so here we can omit it actually
-    # kept for clearness
     if not message.from_user.is_bot:
         registered: bool = await is_registered(message.from_user.id)
         if registered:
@@ -47,7 +57,6 @@ async def start_cmd_handler(message: types.Message):
         await message.answer("bot tidak di perbolehkan menggunakan ini , perlu bantuan? lakukakan perintah /help")
 
 
-# Use multiple registrators. Handler will execute when one of the filters is OK
 @dp.callback_query_handler(text='tolak_daftar')  # if cb.data == 'no'
 @dp.callback_query_handler(text='daftar')  # if cb.data == 'yes'
 async def inline_kb_answer_callback_handler(query: types.CallbackQuery):
@@ -77,67 +86,70 @@ async def inline_kb_answer_callback_handler(query: types.CallbackQuery):
 @dp.callback_query_handler(text='linkaja')  # if cb.data == 'yes'
 @dp.callback_query_handler(text='mkios')  # if cb.data == 'yes'
 @dp.callback_query_handler(text='bulk')  # if cb.data == 'yes'
-async def order_callback_handler(query: types.CallbackQuery):
+async def order_callback_handler(query: types.CallbackQuery, state: user_form):
     registered: bool = await is_registered(query.from_user.id)
     if not registered:
         await query.message.reply("Sorry, Kamu Belum Terdaftar 😝", reply_markup=types.ReplyKeyboardRemove())
     else:
+        async with state.proxy() as proxy:  # proxy = FSMContextProxy(state); await proxy.load()
+            proxy['buy'] = query.data
+            proxy['do_verify_buy'] = True
         answer_data = query.data
-        await query.answer(f'You answered with {answer_data!r}')
-        if answer_data == 'buy_sp_reg':
-            await query.message.answer(
-                "Fitur Belanjunya belum jadi mas, wkwkw 🤣",
-                reply_markup=types.ReplyKeyboardRemove()
-            )
-        elif answer_data == 'buy_sp_data':
-            await query.message.answer(
-                "Fitur Belanjunya belum jadi mas, wkwkw 🤣",
-                reply_markup=types.ReplyKeyboardRemove()
-            )
-        else:
-            await query.message.answer(
-                "Fitur Belanjunya belum jadi mas, wkwkw 🤣",
-                reply_markup=types.ReplyKeyboardRemove()
-            )
+        await query.answer(f'You answered with {goods[answer_data]!r}')
+        await query.message.answer(
+            f"Masukkan Jumlah {goods[answer_data]} yang ingin anda beli dalam bentuk angka",
+            reply_markup=types.ReplyKeyboardRemove()
+        )
             # 272474818
             # text = f'Unexpected callback data {answer_data!r}!'
             # await bot.send_message(query.from_user.id, text)
 
 
+@dp.callback_query_handler(text='verify_buy')  # if cb.data == 'yes'
+@dp.callback_query_handler(text='cancel_buy')  # if cb.data == 'yes'
+async def verify_order_callback_handler(query: types.CallbackQuery, state: user_form):
+    answer_data = query.data
+    registered: bool = await is_registered(query.from_user.id)
+    if not registered:
+        return await query.message.reply("Sorry, Kamu Belum Terdaftar 😝", reply_markup=types.ReplyKeyboardRemove())
+    async with state.proxy() as proxy:
+        proxy.setdefault('buy', 0)
+        proxy.setdefault('do_verify_buy', 0)
+        proxy['buy'] = 0
+        if proxy['do_verify_buy']:
+            proxy['buy'] = False
+            proxy['do_verify_buy'] = False
+            if answer_data == 'verify_buy':
+                return await query.message.answer("Anda berhasil membeli", reply_markup=types.ReplyKeyboardRemove())
+            else:
+                return await query.message.answer("Pembelian di cancel",
+                                                 reply_markup=types.ReplyKeyboardRemove())
+        return await query.message.answer("Tindakan anda ini tidak memverifikasi apapun, "
+                                         "Perlu bantuan ? /help", reply_markup=types.ReplyKeyboardRemove())
+
+
 @dp.message_handler()
-async def all_message_handler(message: types.Message):
+async def all_message_handler(message: types.Message, state: user_form):
+    buy = False
+    async with state.proxy() as proxy:
+        proxy.setdefault('buy', 0)
+        proxy.setdefault('do_verify_buy', 0)
+        if proxy['buy']:
+            buy = proxy['buy']
+    if buy:
+        registered: bool = await is_registered(message.from_user.id)
+        if not registered:
+            return await message.reply("Sorry, Kamu Belum Terdaftar 😝", reply_markup=types.ReplyKeyboardRemove())
+        return await do_buy(buy, message, state)
+    else:
+        async with state.proxy() as proxy:
+            proxy.setdefault('buy', 0)
     if '#DAFTAR\n' and 'Kabupaten' and 'Kecamatan' and 'Nama Outlet' and 'Nomor MKios' in message.text:
-        registered: bool = await is_registered(message.from_user.id)
-        if not registered:
-            await formulir_daftar(message)
-        else:
-            await message.answer("Sebelumnya Anda Sudah Terdaftar, Perlu bantuan ? /help",
-                                 reply_markup=types.ReplyKeyboardRemove())
+        return await formulir_daftar(message)
     if message.text == "(_Belanja_)":
-        registered: bool = await is_registered(message.from_user.id)
-        if not registered:
-            await message.reply("Kamu Belum Terdaftar 😝", reply_markup=types.ReplyKeyboardRemove())
-        else:
-            keyboard_markup = types.InlineKeyboardMarkup(row_width=3)
-            text_and_data = (
-                ('SP Reg', 'buy_sp_reg'),
-                ('SP Data', 'buy_sp_data'),
-            )
-            row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
-            keyboard_markup.row(*row_btns)
-            text_and_data = (
-                ('Voucher Fisik', 'voucher_fisik'),
-                ('LinkAja', 'linkaja'),
-            )
-            row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
-            keyboard_markup.row(*row_btns)
-            text_and_data = (
-                ('Mkios', 'mkios'),
-                ('Bulk', 'bulk'),
-            )
-            row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
-            keyboard_markup.row(*row_btns)
-            await message.reply("Silahkan Dipilih Productnya", reply_markup=keyboard_markup)
+        return await select_menu(message)
+    return await message.answer("Perintah tidak di temukan, Perlu bantuan ? /help",
+                                reply_markup=types.ReplyKeyboardRemove())
 
 
 if __name__ == '__main__':

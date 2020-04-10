@@ -1,8 +1,11 @@
 from aiogram import types
-from core import goods, is_registered
+from core import goods, is_registered, User
 
 
 async def do_buy(goods_selected, message, state):
+    registered: User = await is_registered(message.from_user.id)
+    if not registered.ok:
+        return await message.reply("Kamu Belum Terdaftar 😝", reply_markup=types.ReplyKeyboardRemove())
     try:
         qty = int(message.text)
         async with state.proxy() as proxy:
@@ -18,9 +21,8 @@ async def do_buy(goods_selected, message, state):
             )
             row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
             keyboard_markup.row(*row_btns)
-            otlet_name = 'None'
             return await message.answer(f"Anda akan membeli {goods[goods_selected]} sebanyak {qty} "
-                                        f"akan yang akan dikirim ke otlet {otlet_name}",
+                                        f"yang akan dikirim ke otlet {registered.nama_outlet}",
                                         reply_markup=keyboard_markup)
     except:
         async with state.proxy() as proxy:
@@ -30,8 +32,11 @@ async def do_buy(goods_selected, message, state):
 
 
 async def select_menu(message):
-    registered: bool = await is_registered(message.from_user.id)
-    if not registered:
+    if message.chat.type == 'group':
+        return await message.answer(f"Perintah ini tidak berlaku disini, jika anda perlu bantuan saya, "
+                                    f"Private Message ☺️")
+    registered: User = await is_registered(message.from_user.id)
+    if not registered.ok:
         return await message.reply("Kamu Belum Terdaftar 😝", reply_markup=types.ReplyKeyboardRemove())
     else:
         keyboard_markup = types.InlineKeyboardMarkup(row_width=3)

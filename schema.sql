@@ -8,14 +8,16 @@ CREATE TABLE user(
     kecamatan VARCHAR(150) NOT NULL ,
     nama_outlet VARCHAR(150) NOT NULL ,
     nomor_mkios BIGINT(30) NOT NULL ,
-    tgl_registrasi DATE NOT NULL
+    tgl_registrasi TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE orderan(
     id INT NOT NULL AUTO_INCREMENT ,
     telegram_id INT(20) NOT NULL ,
-    product_name VARCHAR(150) NOT NULL ,
+    bot_message_id INT(20) NULL ,
+    status BOOLEAN NOT NULL DEFAULT FALSE ,
+    kode_barang VARCHAR(150) NOT NULL ,
     qty INT NOT NULL ,
-    tgl_beli DATE NOT NULL ,
+    tgl_beli TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );

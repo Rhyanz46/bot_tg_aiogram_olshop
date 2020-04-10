@@ -1,23 +1,23 @@
 from aiogram import types
-from core import regex_special_character, is_registered
+from core import regex_special_character, is_registered, User
 from database import cnx
-from datetime import datetime
 
 
 async def add_user(user: dict):
     cursor = cnx.cursor(buffered=True)
     query = ("INSERT INTO user "
-             "(telegram_id, telegram_username, kabupaten, kecamatan, nama_outlet, nomor_mkios, tgl_registrasi) "
-             "VALUES (%(telegram_id)s, '', %(kabupaten)s, %(kecamatan)s, %(nama_outlet)s, %(nomor_mkios)s, %(tgl_registrasi)s)")
+             "(telegram_id, telegram_username, kabupaten, kecamatan, nama_outlet, nomor_mkios) "
+             "VALUES (%(telegram_id)s, '', %(kabupaten)s, %(kecamatan)s, %(nama_outlet)s, %(nomor_mkios)s)")
     cursor.execute(query, user)
-    print(user)
     cnx.commit()
-    # cnx.close()
 
 
 async def menu(message: types.Message):
-    registered: bool = await is_registered(message.from_user.id)
-    if not registered:
+    if message.chat.type == 'group':
+        return await message.answer(f"Perintah ini tidak berlaku disini, jika anda perlu bantuan saya, "
+                                    f"Private Message ☺️")
+    registered: User = await is_registered(message.from_user.id)
+    if not registered.ok:
         await message.answer("anda belum terdaftar, butuh bantuan ? lakukan perintah /help",
                              reply_markup=types.ReplyKeyboardRemove())
     else:
@@ -29,10 +29,10 @@ async def menu(message: types.Message):
 
 
 async def formulir_daftar(message: types.Message):
-    registered: bool = await is_registered(message.from_user.id)
-    if not registered:
+    registered: User = await is_registered(message.from_user.id)
+    if not registered.ok:
         data: list = message.text.split('\n')
-        form_data: dict = {"telegram_id": message.from_user.id, "tgl_registrasi": datetime.now().date()}
+        form_data: dict = {"telegram_id": message.from_user.id}
         valid: bool = True
         for item in data:
             if 'Kabupaten' in item:
@@ -82,8 +82,8 @@ async def formulir_daftar(message: types.Message):
 
 
 async def daftar(message: types.Message):
-    registered: bool = await is_registered(message.from_user.id)
-    if registered:
+    registered: User = await is_registered(message.from_user.id)
+    if registered.ok:
         keyboard_markup = types.ReplyKeyboardRemove()
         await message.answer(f"maaf {message.from_user['first_name']}, anda sudah terdaftar, "
                              f"butuh bantuan ? lakukan perintah /help ",

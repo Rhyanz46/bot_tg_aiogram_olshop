@@ -50,9 +50,10 @@ async def register_cmd_handler(message: types.Message):
 
 @dp.message_handler(commands='start')
 async def start_cmd_handler(message: types.Message, state: user_form):
-    if message.chat.type == 'group':
-        async with state.proxy() as proxy:
-            await default_proxy(proxy)
+    async with state.proxy() as proxy:
+        await default_proxy(proxy)
+        await reset_proxy(proxy)
+        if message.chat.type == 'group':
             if not proxy['joined']:
                 proxy['joined'] = True
                 return await message.answer(f"Terimakasih sudah memanggil saya, "
@@ -64,19 +65,19 @@ async def start_cmd_handler(message: types.Message, state: user_form):
                                         f"melakukan proses order "
                                         f"jika anda perlu bantuan saya, "
                                         f"Private Message ☺️ jangan disini yaaa.")
-    if not message.from_user.is_bot:
-        registered: User = await is_registered(message.from_user.id)
-        if registered.ok:
-            await message.answer(f"selamat datang kembali "
-                                 f"{message.from_user['first_name']} ☺️"
-                                 f", perlu bantuan? lakukan perintah /help ")
-            await menu(message)
+        if not message.from_user.is_bot:
+            registered: User = await is_registered(message.from_user.id)
+            if registered.ok:
+                await message.answer(f"selamat datang kembali "
+                                     f"{message.from_user['first_name']} ☺️"
+                                     f", perlu bantuan? lakukan perintah /help ")
+                await menu(message)
+            else:
+                keyboard_markup = types.ReplyKeyboardRemove()
+                await message.answer(f"Selamat Datang {message.from_user.first_name} ☺️",reply_markup=keyboard_markup)
+                await daftar(message)
         else:
-            keyboard_markup = types.ReplyKeyboardRemove()
-            await message.answer(f"Selamat Datang {message.from_user.first_name} ☺️",reply_markup=keyboard_markup)
-            await daftar(message)
-    else:
-        await message.answer("bot tidak di perbolehkan menggunakan ini , perlu bantuan? lakukakan perintah /help")
+            await message.answer("bot tidak di perbolehkan menggunakan ini , perlu bantuan? lakukakan perintah /help")
 
 
 @dp.callback_query_handler(text='tolak_daftar')  # if cb.data == 'no'
@@ -280,8 +281,12 @@ async def all_message_handler(message: types.Message, state: user_form):
             elif proxy['harus_ada_kategori']:
                 if proxy['kategori']:
                     return await do_buy(proxy['buy'], message, state)
-                return await message.reply("Pilih Kategori Terlebih Dahulu", reply_markup=types.ReplyKeyboardRemove())
+                await reset_proxy(proxy)
             else:
+                if type(proxy['buy']) != str:
+                    await reset_proxy(proxy)
+                    return await message.answer("Maaf, Terjadi kesalahan, Ulangi pembelian di perintah /menu",
+                                                reply_markup=types.ReplyKeyboardRemove())
                 return await do_buy(proxy['buy'], message, state)
         else:
             async with state.proxy() as proxy:

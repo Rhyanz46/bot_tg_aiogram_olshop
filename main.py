@@ -1,4 +1,9 @@
-from core import bot, dp, goods, is_registered, group_id, User, Order, order_barang, semua_produk_yg_ada_kategorinya
+from core import (
+    bot, dp, goods, is_registered,
+    group_id, User, Order,
+    order_barang, semua_produk_yg_ada_kategorinya,
+    reset_proxy, default_proxy
+)
 from aiogram import executor, types
 from daftar import formulir_daftar, daftar, menu
 from buy import do_buy, select_menu, temukan_nama_kategori_berdasarkan_kode_kat
@@ -47,7 +52,7 @@ async def register_cmd_handler(message: types.Message):
 async def start_cmd_handler(message: types.Message, state: user_form):
     if message.chat.type == 'group':
         async with state.proxy() as proxy:
-            proxy.setdefault('joined', False)
+            await default_proxy(proxy)
             if not proxy['joined']:
                 proxy['joined'] = True
                 return await message.answer(f"Terimakasih sudah memanggil saya, "
@@ -110,44 +115,79 @@ async def verify_order_callback_handler(query: types.CallbackQuery, state: user_
     if not registered.ok:
         return await query.message.reply("Sorry, Kamu Belum Terdaftar 😝", reply_markup=types.ReplyKeyboardRemove())
     async with state.proxy() as proxy:
-        if proxy['do_verify_buy'] and proxy['buy']:
+        await default_proxy(proxy)
+        if proxy.get('do_verify_buy') and proxy.get('buy'):
             if answer_data == 'verify_buy':
-                await bot.send_message(group_id, text=f"[PEMBELIAN] \n\n"
-                                                      f"Barang : {goods[proxy['buy']['buy']]['nama']} \n"
-                                                      f"Jumlah : {proxy['buy']['qty']} \n\n"
-                                                      f"Nama User : {query.from_user.first_name} \n"
-                                                      f"Nama Outlet : {registered.nama_outlet} \n"
-                                                      f"Nomor MKios : {registered.nomor_mkios} \n"
-                                                      f"Kabupaten : {registered.kabupaten} \n"
-                                                      f"Kecamatan : {registered.kecamatan} \n"
-                                                      f"\n\n"
-                                                      f"---------")
+                admin_info = f"[PEMBELIAN] \n\n" \
+                             f"----- Barang : \n"
+
+                if not proxy['beli_banyak']:
+                    if not proxy['buy'].get('kategori'):
+                        admin_info += f"Barang : {goods[proxy['buy']['buy']]['nama']} \n" \
+                                     f"Jumlah : {proxy['buy']['qty']} \n"
+                    else:
+                        kategori_name: str = temukan_nama_kategori_berdasarkan_kode_kat(proxy['buy']['buy'],
+                                                                                        proxy['kategori'])
+                        admin_info += f"nama = {goods[proxy['buy']['buy']]['nama']} \n" \
+                                      f"Kategori = {kategori_name}\n" \
+                                      f"Jumlah = {proxy['buy']['qty']} \n"
+                else:
+                    for item in proxy['beli_banyak']:
+                        if not item.get('kategori'):
+                            admin_info += f"\nNama : {goods[item['buy']]['nama']} \n" \
+                                          f"Jumlah : {item['qty']} \n"
+                        else:
+                            kategori_name: str = temukan_nama_kategori_berdasarkan_kode_kat(item['buy'],
+                                                                                            item['kategori'])
+                            admin_info += f"\nnama = {goods[item['buy']]['nama']} \n" \
+                                          f"Kategori = {kategori_name}\n" \
+                                          f"Jumlah = {item['qty']} \n"
+                    # get last data
+                    if not proxy['buy'].get('kategori'):
+                        admin_info += f"\nNama : {goods[proxy['buy']['buy']]['nama']} \n" \
+                                     f"Jumlah : {proxy['buy']['qty']} \n"
+                    else:
+                        kategori_name: str = temukan_nama_kategori_berdasarkan_kode_kat(proxy['buy']['buy'],
+                                                                                        proxy['kategori'])
+                        admin_info += f"\nnama = {goods[proxy['buy']['buy']]['nama']} \n" \
+                                      f"Kategori = {kategori_name}\n" \
+                                      f"Jumlah = {proxy['buy']['qty']} \n"
+
+                admin_info += f"\n\n----- Informasi User\n" \
+                                 f"Nama User = {query.from_user.first_name} \n" \
+                                 f"Nama Outlet = {registered.nama_outlet} \n" \
+                                 f"Nomor MKios = {registered.nomor_mkios} \n" \
+                                 f"Kabupaten = {registered.kabupaten} \n" \
+                                 f"Kecamatan = {registered.kecamatan} \n" \
+                                 f"\n\n" \
+                                 f"---------"
+                await bot.send_message(group_id, text=admin_info)
                 order = Order()
                 order.kode_barang = str(proxy['buy']['buy'])
                 order.qty = proxy['buy']['qty']
                 order.telegram_id = query.from_user.id
                 # order.bot_message_id = query.message
                 await order_barang(order)
-
-                proxy['buy'] = False
-                proxy['do_verify_buy'] = False
-                proxy['proses_beli'] = False
-                proxy['kategori'] = False
-                proxy['harus_ada_kategori'] = False
+                await reset_proxy(proxy)
                 return await query.message.answer("Anda berhasil membeli", reply_markup=types.ReplyKeyboardRemove())
             elif answer_data == 'tambah_barang':
-                proxy['buy'] = False
-                proxy['do_verify_buy'] = False
-                proxy['proses_beli'] = False
-                proxy['kategori'] = False
-                proxy['harus_ada_kategori'] = False
-                return await query.message.answer("Ettt Belum jahaddddi", reply_markup=types.ReplyKeyboardRemove())
+                if type(proxy['buy']) != dict:
+                    await reset_proxy(proxy)
+                    return await query.message.answer(
+                        "Gagal, Ulangi Proses Order",
+                        reply_markup=types.ReplyKeyboardRemove()
+                    )
+                await default_proxy(proxy)
+                if proxy['beli_banyak']:
+                    proxy['beli_banyak'].append(proxy['buy'])
+                else:
+                    proxy['beli_banyak'] = [proxy['buy']]
+                print(proxy['beli_banyak'])
+                await reset_proxy(proxy, kecuali=['beli_banyak'])
+                return await query.message.answer("Silahkan Dipilih Lagi", reply_markup=types.ReplyKeyboardRemove())
+                # return await select_menu(query.message)
             else:
-                proxy['buy'] = False
-                proxy['do_verify_buy'] = False
-                proxy['proses_beli'] = False
-                proxy['kategori'] = False
-                proxy['harus_ada_kategori'] = False
+                await reset_proxy(proxy)
                 return await query.message.answer("Pembelian di cancel",
                                                  reply_markup=types.ReplyKeyboardRemove())
         return await query.message.answer("Tindakan anda ini tidak memverifikasi apapun, "
@@ -204,11 +244,9 @@ async def order_callback_handler(query: types.CallbackQuery, state: user_form):
     else:
         answer_data = query.data
         async with state.proxy() as proxy:  # proxy = FSMContextProxy(state); await proxy.load()
+            await default_proxy(proxy)
             proxy['buy'] = answer_data
             proxy['do_verify_buy'] = True
-            print('proxy | order_callback_handler')
-            print(proxy)
-            print('proxy | order_callback_handler')
             kategori = goods[answer_data].get('kategori')
             if kategori:
                 proxy['harus_ada_kategori'] = True
@@ -222,6 +260,7 @@ async def order_callback_handler(query: types.CallbackQuery, state: user_form):
                 )
             else:
                 async with state.proxy() as proxy:  # proxy = FSMContextProxy(state); await proxy.load()
+                    await default_proxy(proxy)
                     proxy['proses_beli'] = True
                 await query.answer(f'You answered with {goods[answer_data]["nama"]!r}')
                 await query.message.answer(
@@ -233,14 +272,7 @@ async def order_callback_handler(query: types.CallbackQuery, state: user_form):
 @dp.message_handler()
 async def all_message_handler(message: types.Message, state: user_form):
     async with state.proxy() as proxy:
-        proxy.setdefault('buy', 0)
-        proxy.setdefault('do_verify_buy', 0)
-        proxy.setdefault('proses_beli', 0)
-        proxy.setdefault('kategori', 0)
-        proxy.setdefault('harus_ada_kategori', 0)
-        print('proxy | all_message_handler')
-        print(proxy)
-        print('proxy | all_message_handler')
+        await default_proxy(proxy)
         if proxy['buy']:
             registered: User = await is_registered(message.from_user.id)
             if not registered.ok:

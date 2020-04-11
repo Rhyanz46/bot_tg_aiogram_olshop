@@ -142,3 +142,20 @@ async def order_barang(order: Order):
     cursor.execute(query, order.get())
     cnx.commit()
     # cursor.execute(f"SELECT * FROM user where telegram_id={id_user}")
+
+
+async def reset_proxy(proxy, kecuali=None) -> None:
+    for item in proxy:
+        if kecuali and item in kecuali:
+            continue
+        proxy[item] = False
+
+
+async def default_proxy(proxy) -> None:
+    proxy.setdefault('buy', False)
+    proxy.setdefault('do_verify_buy', False)
+    proxy.setdefault('proses_beli', False)
+    proxy.setdefault('kategori', False)
+    proxy.setdefault('harus_ada_kategori', False)
+    proxy.setdefault('joined', False)
+    proxy.setdefault('beli_banyak', [])

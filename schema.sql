@@ -13,6 +13,7 @@ CREATE TABLE user(
 
 CREATE TABLE orderan(
     id INT NOT NULL AUTO_INCREMENT ,
+    pack_id INT(20) NULL ,
     telegram_id INT(20) NOT NULL ,
     bot_message_id INT(20) NULL ,
     status BOOLEAN NOT NULL DEFAULT FALSE ,

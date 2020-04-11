@@ -21,3 +21,13 @@ CREATE TABLE orderan(
     tgl_beli TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
+
+# CREATE TABLE product(
+#     id INT NOT NULL AUTO_INCREMENT ,
+#     nama INT(20) NOT NULL ,
+#     status BOOLEAN NOT NULL DEFAULT FALSE ,
+#     kode_barang VARCHAR(150) NOT NULL ,
+#     qty INT NOT NULL ,
+#     tgl_beli TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+#     PRIMARY KEY (id)
+# );

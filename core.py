@@ -63,13 +63,75 @@ async def is_registered(id_user: int) -> User:
 group_id = '-471742296'
 
 goods = {
-    'buy_sp_reg': 'SP Reg',
-    'buy_sp_data': 'SP Data',
-    'voucher_fisik': 'Voucher Fisik',
-    'linkaja': 'LinkAja',
-    'mkios': 'Mkios',
-    'bulk': 'Bulk'
+    'buy_sp_reg': {
+        'nama': 'SP Reg',
+        'kategori': [
+            {
+                'kode': 'as_5k',
+                'nama': 'AS 5K'
+            },
+            {
+                'kode': 'simpati_10k',
+                'nama': 'Simpati 10K'
+            },
+            {
+                'kode': 'loop_5k',
+                'nama': 'Loop 5K'
+            }
+        ]
+    },
+    'buy_sp_data': {
+        'nama': 'SP Data',
+        'kategori': [
+            {
+                'kode': '6/6.5gb',
+                'nama': '6/6.5GB'
+            },
+            {
+                'kode': '7.5/8gb',
+                'nama': '7.5/8GB'
+            },
+            {
+                'kode': '10gb',
+                'nama': '10GB'
+            }
+        ]
+    },
+    'voucher_fisik': {
+        'nama': 'Voucher Fisik',
+        'kategori': [
+            {
+                'kode': '4gb',
+                'nama': '4GB'
+            },
+            {
+                'kode': '6.5gb',
+                'nama': '6.5GB'
+            },
+            {
+                'kode': '8gb',
+                'nama': '8GB'
+            }
+        ]
+    },
+    'linkaja': {
+        'nama': 'LinkAja',
+    },
+    'mkios': {
+        'nama': 'Mkios',
+    },
+    'bulk': {
+        'nama': 'Bulk',
+    }
 }
+
+
+def semua_produk_yg_ada_kategorinya() -> list:
+    hasil: list = []
+    for item in goods:
+        if goods[item].get('kategori'):
+            hasil.append(item)
+    return hasil
 
 
 async def order_barang(order: Order):

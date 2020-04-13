@@ -1,4 +1,4 @@
-import re, logging
+import re, logging, asyncio
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -9,19 +9,23 @@ from complain import Complain
 
 logging.basicConfig(level=logging.INFO)
 
+
+class UserForm(StatesGroup):
+    name = State()  # Will be represented in storage as 'Form:name'
+    age = State()  # Will be represented in storage as 'Form:age'
+    gender = State()  # Will be represented in storage as 'Form:gender'
+
+
+user_form = UserForm()
+
 bot_cfg = BotConfig()
 bot = Bot(token=bot_cfg.token)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 regex_special_character = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
 
-complain = Complain(dp)
-# group_id = '-471742296' bakuldata
-group_id = '-471742296'
-
-import asyncio
-loop = asyncio.get_event_loop()
-loop.run_until_complete(complain.load())
+group_id = '-471742296' # bakuldata
+# group_id = '-426065434'
 
 
 class User:
@@ -52,15 +56,6 @@ class Order:
             'telegram_id': self.telegram_id,
             'qty': self.qty
         }
-
-
-class UserForm(StatesGroup):
-    name = State()  # Will be represented in storage as 'Form:name'
-    age = State()  # Will be represented in storage as 'Form:age'
-    gender = State()  # Will be represented in storage as 'Form:gender'
-
-
-user_form = UserForm()
 
 
 async def is_registered(id_user: int) -> User:
@@ -169,7 +164,7 @@ async def reset_proxy(proxy, kecuali=None) -> None:
         proxy[item] = False
 
 
-async def default_proxy(proxy) -> None:
+async def default_proxy(proxy, addtions=None) -> None:
     proxy.setdefault('buy', False)
     proxy.setdefault('do_verify_buy', False)
     proxy.setdefault('proses_beli', False)
@@ -177,3 +172,19 @@ async def default_proxy(proxy) -> None:
     proxy.setdefault('harus_ada_kategori', False)
     proxy.setdefault('joined', False)
     proxy.setdefault('beli_banyak', [])
+    if addtions:
+        print(addtions)
+
+
+complain = Complain(dp, {
+    'state': user_form,
+    'methods': {
+        'reset': reset_proxy,
+        'default': default_proxy
+    },
+    'query': {
+        'is_registered': is_registered
+    }
+})
+loop = asyncio.get_event_loop()
+loop.run_until_complete(complain.load())

@@ -43,7 +43,6 @@ async def start_cmd_handler(message: types.Message, state: user_form):
     async with state.proxy() as proxy:
         await default_proxy(proxy)
         if message.chat.type == 'group':
-            print(message.chat.id)
             if not proxy['joined']:
                 proxy['joined'] = True
                 return await message.answer(f"Terimakasih sudah memanggil saya, \n"
@@ -276,24 +275,35 @@ async def all_message_handler(message: types.Message, state: user_form):
             else:
                 if type(proxy['buy']) != str:
                     await reset_proxy(proxy)
-                    return await message.answer("Maaf, Terjadi kesalahan, Ulangi pembelian di perintah /menu",
-                                                reply_markup=types.ReplyKeyboardRemove())
+                    return await message.answer(
+                        "Maaf, Terjadi kesalahan, Ulangi pembelian di perintah /menu",
+                        reply_markup=types.ReplyKeyboardRemove()
+                    )
                 return await do_buy(proxy['buy'], message, state)
         else:
             async with state.proxy() as proxy:
                 proxy.setdefault('buy', 0)
         if message.chat.type == 'group':
-            return await message.answer(f"Perintah ini tidak berlaku disini, jika anda perlu bantuan saya, "
-                                        f"Private Message ☺️")
+            return await message.answer(
+                f"Perintah ini tidak berlaku disini, jika anda perlu bantuan saya, "
+                f"Private Message ☺️"
+            )
         if '#DAFTAR\n' and 'Kabupaten' and 'Kecamatan' and 'Nama Outlet' and 'Nomor MKios' in message.text:
             return await formulir_daftar(message, proxy)
         if message.text == "(_Belanja_)":
             return await select_menu(message)
         if message.text == "(_Komplain_)":
-            await reset_proxy(proxy)
+            registered: User = await is_registered(message.from_user.id)
+            if not registered.ok:
+                return await message.reply(
+                    "Sorry, Kamu Belum Terdaftar 😝",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
             return await complain.choose_complain(message)
-        return await message.answer("Perintah tidak di temukan, Perlu bantuan ? /help",
-                                    reply_markup=types.ReplyKeyboardRemove())
+        return await message.answer(
+            "Perintah tidak di temukan, Perlu bantuan ? /help",
+            reply_markup=types.ReplyKeyboardRemove()
+        )
 
 
 if __name__ == '__main__':

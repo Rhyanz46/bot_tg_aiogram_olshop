@@ -2,22 +2,12 @@ from core import (
     bot, dp, goods, is_registered,
     group_id, User, Order,
     order_barang, semua_produk_yg_ada_kategorinya,
-    reset_proxy, default_proxy
+    reset_proxy, default_proxy, complain,
+    user_form
 )
 from aiogram import executor, types
 from daftar import formulir_daftar, daftar, menu
 from buy import do_buy, select_menu, temukan_nama_kategori_berdasarkan_kode_kat
-
-from aiogram.dispatcher.filters.state import State, StatesGroup
-
-
-class UserForm(StatesGroup):
-    name = State()  # Will be represented in storage as 'Form:name'
-    age = State()  # Will be represented in storage as 'Form:age'
-    gender = State()  # Will be represented in storage as 'Form:gender'
-
-
-user_form = UserForm()
 
 
 @dp.message_handler(commands='help')
@@ -52,20 +42,22 @@ async def register_cmd_handler(message: types.Message):
 async def start_cmd_handler(message: types.Message, state: user_form):
     async with state.proxy() as proxy:
         await default_proxy(proxy)
-        await reset_proxy(proxy)
         if message.chat.type == 'group':
+            print(message.chat.id)
             if not proxy['joined']:
                 proxy['joined'] = True
-                return await message.answer(f"Terimakasih sudah memanggil saya, "
-                                            f"saya akan mengirim notifikasi kesini "
-                                            f"jika seseorang meng-order barang, "
+                return await message.answer(f"Terimakasih sudah memanggil saya, \n"
+                                            f"mulai sekarang saya akan mengirim notifikasi kesini "
+                                            f"jika seseorang meng-order barang, \n"
                                             f"jika anda perlu bantuan saya, "
                                             f"Private Message ☺️ jangan disini yaaa.")
+            await reset_proxy(proxy, kecuali=['joined'])
             return await message.answer(f"Saya hanya mengirim notifikasi jika ada seseorang sedang "
-                                        f"melakukan proses order "
+                                        f"melakukan proses order, \n"
                                         f"jika anda perlu bantuan saya, "
                                         f"Private Message ☺️ jangan disini yaaa.")
         if not message.from_user.is_bot:
+            await reset_proxy(proxy)
             registered: User = await is_registered(message.from_user.id)
             if registered.ok:
                 await message.answer(f"selamat datang kembali "
@@ -183,7 +175,6 @@ async def verify_order_callback_handler(query: types.CallbackQuery, state: user_
                     proxy['beli_banyak'].append(proxy['buy'])
                 else:
                     proxy['beli_banyak'] = [proxy['buy']]
-                print(proxy['beli_banyak'])
                 await reset_proxy(proxy, kecuali=['beli_banyak'])
                 return await query.message.answer("Silahkan Dipilih Lagi", reply_markup=types.ReplyKeyboardRemove())
                 # return await select_menu(query.message)
@@ -295,9 +286,12 @@ async def all_message_handler(message: types.Message, state: user_form):
             return await message.answer(f"Perintah ini tidak berlaku disini, jika anda perlu bantuan saya, "
                                         f"Private Message ☺️")
         if '#DAFTAR\n' and 'Kabupaten' and 'Kecamatan' and 'Nama Outlet' and 'Nomor MKios' in message.text:
-            return await formulir_daftar(message)
+            return await formulir_daftar(message, proxy)
         if message.text == "(_Belanja_)":
             return await select_menu(message)
+        if message.text == "(_Komplain_)":
+            await reset_proxy(proxy)
+            return await complain.choose_complain(message)
         return await message.answer("Perintah tidak di temukan, Perlu bantuan ? /help",
                                     reply_markup=types.ReplyKeyboardRemove())
 

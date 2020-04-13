@@ -1,8 +1,11 @@
 import re, logging
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher.filters.state import State, StatesGroup
 from config import BotConfig
 from database import cnx
+
+from complain import Complain
 
 logging.basicConfig(level=logging.INFO)
 
@@ -11,6 +14,14 @@ bot = Bot(token=bot_cfg.token)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 regex_special_character = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
+
+complain = Complain(dp)
+# group_id = '-471742296' bakuldata
+group_id = '-471742296'
+
+import asyncio
+loop = asyncio.get_event_loop()
+loop.run_until_complete(complain.load())
 
 
 class User:
@@ -43,6 +54,15 @@ class Order:
         }
 
 
+class UserForm(StatesGroup):
+    name = State()  # Will be represented in storage as 'Form:name'
+    age = State()  # Will be represented in storage as 'Form:age'
+    gender = State()  # Will be represented in storage as 'Form:gender'
+
+
+user_form = UserForm()
+
+
 async def is_registered(id_user: int) -> User:
     cursor = cnx.cursor(buffered=True)
     cursor.execute(f"SELECT * FROM user where telegram_id={id_user}")
@@ -59,8 +79,6 @@ async def is_registered(id_user: int) -> User:
         user_result.tgl_registrasi = user[6]
         return user_result
     return user_result
-
-group_id = '-471742296'
 
 goods = {
     'buy_sp_reg': {

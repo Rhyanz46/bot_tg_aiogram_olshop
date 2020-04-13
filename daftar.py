@@ -1,5 +1,5 @@
 from aiogram import types
-from core import regex_special_character, is_registered, User
+from core import regex_special_character, is_registered, User, reset_proxy
 from database import cnx
 
 
@@ -22,13 +22,17 @@ async def menu(message: types.Message):
                              reply_markup=types.ReplyKeyboardRemove())
     else:
         keyboard_markup = types.ReplyKeyboardMarkup(row_width=2)
-        text_and_data = (('(_Belanja_)'), ('/Close!'))
+        text_and_data = (('(_Belanja_)'), ('(_Komplain_)'))
+        row_btns = (types.KeyboardButton(text) for text in text_and_data)
+        keyboard_markup.row(*row_btns)
+        text_and_data = (('/Close!'),)
         row_btns = (types.KeyboardButton(text) for text in text_and_data)
         keyboard_markup.row(*row_btns)
         await message.answer("Pilih Menu : ", reply_markup=keyboard_markup)
 
 
-async def formulir_daftar(message: types.Message):
+async def formulir_daftar(message: types.Message, proxy):
+    await reset_proxy(proxy)
     registered: User = await is_registered(message.from_user.id)
     if not registered.ok:
         data: list = message.text.split('\n')

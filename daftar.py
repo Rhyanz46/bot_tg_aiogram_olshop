@@ -31,8 +31,7 @@ async def menu(message: types.Message):
         await message.answer("Pilih Menu : ", reply_markup=keyboard_markup)
 
 
-async def formulir_daftar(message: types.Message, proxy):
-    await reset_proxy(proxy)
+async def formulir_daftar(message: types.Message):
     registered: User = await is_registered(message.from_user.id)
     if not registered.ok:
         data: list = message.text.split('\n')

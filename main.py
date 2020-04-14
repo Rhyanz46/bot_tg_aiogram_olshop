@@ -265,11 +265,20 @@ async def order_callback_handler(query: types.CallbackQuery, state: user_form):
                 )
 
 
-@dp.message_handler()
+@dp.message_handler(content_types=types.ContentTypes.PHOTO)
+async def photo_handler(message: types.Message, state: user_form):
+    async with state.proxy() as proxy:
+        if proxy.get('complain_digipos_photo_require'):
+            from complain.digipos import send_complain_or_not
+            await message.answer(
+                "Dengan foto yang anda kirim ini akan membuat proses peninjauan menjadi lebih mudah, Terimakasih",
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+            await send_complain_or_not(message, state)
+
+
+@dp.message_handler(content_types=types.ContentTypes.TEXT)
 async def all_message_handler(message: types.Message, state: user_form):
-    for index, img in enumerate(message.photo):
-        print(f"index {index}")
-        print(img)
     async with state.proxy() as proxy:
         await default_proxy(proxy)
         if proxy.get('complain_name'):
@@ -302,7 +311,7 @@ async def all_message_handler(message: types.Message, state: user_form):
                 f"Private Message ☺️"
             )
         if '#DAFTAR\n' and 'Kabupaten' and 'Kecamatan' and 'Nama Outlet' and 'Nomor MKios' in message.text:
-            return await formulir_daftar(message, proxy)
+            return await formulir_daftar(message)
         if message.text == "(_Belanja_)":
             return await select_product(message)
         if message.text == "(_Komplain_)":
@@ -320,4 +329,4 @@ async def all_message_handler(message: types.Message, state: user_form):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dp, skip_updates=False)

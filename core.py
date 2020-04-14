@@ -173,7 +173,8 @@ async def default_proxy(proxy, addtions=None) -> None:
     proxy.setdefault('joined', False)
     proxy.setdefault('beli_banyak', [])
     if addtions:
-        print(addtions)
+        for item in addtions:
+            proxy.setdefault(f"{item}", addtions[item])
 
 
 complain = Complain(dp, {

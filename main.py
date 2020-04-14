@@ -7,7 +7,13 @@ from core import (
 )
 from aiogram import executor, types
 from daftar import formulir_daftar, daftar, menu
-from buy import do_buy, select_menu, temukan_nama_kategori_berdasarkan_kode_kat
+from buy import do_buy, select_product, temukan_nama_kategori_berdasarkan_kode_kat
+
+
+class Opt:
+    def __init__(self):
+        pass
+
 
 
 @dp.message_handler(commands='help')
@@ -264,6 +270,11 @@ async def order_callback_handler(query: types.CallbackQuery, state: user_form):
 async def all_message_handler(message: types.Message, state: user_form):
     async with state.proxy() as proxy:
         await default_proxy(proxy)
+        if proxy.get('complain_name'):
+            registered: User = await is_registered(message.from_user.id)
+            if not registered.ok:
+                return await message.reply("Sorry, Kamu Belum Terdaftar 😝", reply_markup=types.ReplyKeyboardRemove())
+            return await complain.handle_message_complain(message, state, reset_proxy, default_proxy)
         if proxy['buy']:
             registered: User = await is_registered(message.from_user.id)
             if not registered.ok:
@@ -291,7 +302,7 @@ async def all_message_handler(message: types.Message, state: user_form):
         if '#DAFTAR\n' and 'Kabupaten' and 'Kecamatan' and 'Nama Outlet' and 'Nomor MKios' in message.text:
             return await formulir_daftar(message, proxy)
         if message.text == "(_Belanja_)":
-            return await select_menu(message)
+            return await select_product(message)
         if message.text == "(_Komplain_)":
             registered: User = await is_registered(message.from_user.id)
             if not registered.ok:
@@ -299,7 +310,7 @@ async def all_message_handler(message: types.Message, state: user_form):
                     "Sorry, Kamu Belum Terdaftar 😝",
                     reply_markup=types.ReplyKeyboardRemove()
                 )
-            return await complain.choose_complain(message)
+            return await complain.choose_complain_menu(message)
         return await message.answer(
             "Perintah tidak di temukan, Perlu bantuan ? /help",
             reply_markup=types.ReplyKeyboardRemove()

@@ -53,7 +53,7 @@ async def do_buy(goods_selected, message, state):
                                     reply_markup=keyboard_markup)
 
 
-async def select_menu(message):
+async def select_product(message):
     if message.chat.type == 'group':
         return await message.answer(f"Perintah ini tidak berlaku disini, jika anda perlu bantuan saya, "
                                     f"Private Message ☺️")

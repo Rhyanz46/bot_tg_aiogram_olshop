@@ -1,5 +1,5 @@
 from aiogram import types
-from complain.digipos import digipos_complain_handler
+from complain.digipos import digipos_complain_handler, digipos_complain_confirmation_handler
 
 
 class Complain:
@@ -9,6 +9,7 @@ class Complain:
 
     async def load(self):
         await self.choose_complain_handler()
+        await digipos_complain_confirmation_handler(self.dp, self.state_obj)
 
     @staticmethod
     async def choose_complain_menu(message: types.Message):
@@ -49,10 +50,10 @@ class Complain:
                 proxy['complain_name'] = answer_data
             if answer_data == 'digipos':
                 return await query.message.answer(
-                    "Cukup digipos",
+                    "Jelaskan Detail Komplain Digipos : ",
                     reply_markup=types.ReplyKeyboardRemove()
                 )
             return await query.message.answer(
-                "Cukup voucer visik",
+                "Jelaskan Detail Komplain Voucer Fisik : ",
                 reply_markup=types.ReplyKeyboardRemove()
             )

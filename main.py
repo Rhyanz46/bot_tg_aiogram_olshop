@@ -15,7 +15,6 @@ class Opt:
         pass
 
 
-
 @dp.message_handler(commands='help')
 async def help_cmd_handler(message: types.Message):
     keyboard_markup = types.ReplyKeyboardRemove()
@@ -268,6 +267,7 @@ async def order_callback_handler(query: types.CallbackQuery, state: user_form):
 
 @dp.message_handler()
 async def all_message_handler(message: types.Message, state: user_form):
+    # print(message.photo[0].file_id)
     async with state.proxy() as proxy:
         await default_proxy(proxy)
         if proxy.get('complain_name'):

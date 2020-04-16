@@ -32,3 +32,13 @@ CREATE TABLE orderan(
 #     tgl_beli TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 #     PRIMARY KEY (id)
 # );
+
+
+CREATE TABLE complain(
+    id INT NOT NULL AUTO_INCREMENT ,
+    complain_id VARCHAR(40) NOT NULL ,
+    responded BOOLEAN NOT NULL DEFAULT FALSE ,
+    telegram_id INT(20) NOT NULL ,
+    last_update TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);

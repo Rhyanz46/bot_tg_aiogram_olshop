@@ -5,7 +5,7 @@ from core import (
     reset_proxy, default_proxy, complain,
     user_form
 )
-from time import sleep
+
 from aiogram import executor, types
 from daftar import formulir_daftar, daftar, menu
 from buy import do_buy, select_product, temukan_nama_kategori_berdasarkan_kode_kat
@@ -303,6 +303,7 @@ async def all_message_handler(message: types.Message, state: user_form):
             async with state.proxy() as proxy:
                 proxy.setdefault('buy', 0)
         if message.chat.type == 'group':
+            print(message)
             return await message.answer(
                 f"Perintah ini tidak berlaku disini, jika anda perlu bantuan saya, "
                 f"Private Message ☺️"

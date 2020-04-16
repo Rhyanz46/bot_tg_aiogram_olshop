@@ -5,6 +5,7 @@ from core import (
     reset_proxy, default_proxy, complain,
     user_form
 )
+from time import sleep
 from aiogram import executor, types
 from daftar import formulir_daftar, daftar, menu
 from buy import do_buy, select_product, temukan_nama_kategori_berdasarkan_kode_kat
@@ -269,12 +270,8 @@ async def order_callback_handler(query: types.CallbackQuery, state: user_form):
 async def photo_handler(message: types.Message, state: user_form):
     async with state.proxy() as proxy:
         if proxy.get('complain_digipos_photo_require'):
-            from complain.digipos import send_complain_or_not
-            await message.answer(
-                "Dengan foto yang anda kirim ini akan membuat proses peninjauan menjadi lebih mudah, Terimakasih",
-                reply_markup=types.ReplyKeyboardRemove()
-            )
-            await send_complain_or_not(message, state)
+            from complain.digipos import response_upload_bukti
+            return await response_upload_bukti(message, proxy)
 
 
 @dp.message_handler(content_types=types.ContentTypes.TEXT)

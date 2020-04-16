@@ -1,9 +1,11 @@
 from aiogram import types
+import time
 from complain.digipos import digipos_complain_handler, digipos_complain_confirmation_handler
 
 
 class Complain:
     def __init__(self, dp, state_obj):
+        self.complain = None
         self.dp = dp
         self.state_obj = state_obj
 
@@ -23,6 +25,34 @@ class Complain:
         await message.reply(
             "Pilih",
             reply_markup=keyboard_markup
+        )
+
+    async def send(self, query, state):
+        from core import bot, group_id
+        reset_proxy = self.state_obj['methods']['reset']
+        async with state.proxy() as proxy:
+            await reset_proxy(proxy)
+        text = f"Pelaporan Kendala Transaksi {self.complain['type']}\n\n" \
+               f"Kabupaten : {self.complain['kabupaten']}\n" \
+               f"Kecamatan : {self.complain['kecamatan']}\n" \
+               f"ID Outlet : {self.complain['id_outlet']}\n" \
+               f"Nama Outlet : {self.complain['nama_outlet']}\n" \
+               f"No Mkios : {self.complain['no_mkios']}\n" \
+               f"No Pelanggan : {self.complain['no_pelanggan']}\n" \
+               f"Tgl Transaksi : {self.complain['tgl_transaksi']}\n" \
+               f"Metode Pembayaran : {self.complain['pay_method']}\n" \
+               f"Versi APK DigiPos : {self.complain['versi_apk_dipos']}\n" \
+               f"Channel lain (UMB) : {self.complain['channel_lain']}\n" \
+               f"Detil Masalah : {self.complain['detail']}\n"
+        await bot.send_message(group_id, text=text)
+        await query.message.answer(
+            "Tunggu Sebentar . . . ",
+            reply_markup=types.ReplyKeyboardRemove()
+        )
+        time.sleep(2)
+        return await query.message.answer(
+            f"Teriamakasih, komplain {self.complain['type']} anda berhasil di kirim, tunggu response 1x24 jam :) ",
+            reply_markup=types.ReplyKeyboardRemove()
         )
 
     @staticmethod

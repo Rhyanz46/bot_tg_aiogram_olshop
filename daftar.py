@@ -22,7 +22,8 @@ async def menu(message: types.Message):
                              reply_markup=types.ReplyKeyboardRemove())
     else:
         keyboard_markup = types.ReplyKeyboardMarkup(row_width=2)
-        text_and_data = (('(_Belanja_)'), ('(_Komplain_)'))
+        # text_and_data = (('(_Belanja_)'), ('(_Komplain_)'))
+        text_and_data = (('(_Komplain_)'),)
         row_btns = (types.KeyboardButton(text) for text in text_and_data)
         keyboard_markup.row(*row_btns)
         text_and_data = (('/Close!'),)

@@ -1,5 +1,5 @@
 from aiogram import types
-from core import regex_special_character, is_registered, User, reset_proxy
+from core import regex_special_character, is_registered, User
 from database import cnx
 
 

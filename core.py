@@ -102,6 +102,7 @@ class ComplainDigiposData:
                                    f'%(channel_lain)s, "{chat_id}", "{message_id}")')
             cursor.execute(query_save_complain, data)
             cnx.commit()
+            data['photo'] = photo
         else:
             raise KeyError
 
@@ -182,6 +183,7 @@ class ComplainVoucherFisikData:
                                    f'"{chat_id}", "{message_id}")')
             cursor.execute(query_save_complain, data)
             cnx.commit()
+            data['photo'] = photo
         else:
             raise KeyError
 

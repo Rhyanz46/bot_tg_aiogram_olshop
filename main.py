@@ -17,12 +17,22 @@ class Opt:
 
 
 @dp.message_handler(commands='help')
-async def help_cmd_handler(message: types.Message):
+async def help_cmd_handler(message: types.Message, state: user_form):
+    async with state.proxy() as proxy:
+        await default_proxy(proxy)
+        await reset_proxy(proxy)
     keyboard_markup = types.ReplyKeyboardRemove()
     await message.answer("1.\tStart Bot\t\t\t\t\t\t\t\t\t\t\t\t: /start\n"
                          "2.\tDaftar\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: /daftar\n"
                          "3.\tMenu\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t: /menu\n"
                          "4.\tBantuan Ini\t\t\t\t\t\t\t: /help", reply_markup=keyboard_markup)
+
+
+@dp.message_handler(commands='open_complain_chat')
+async def open_complain_chat_handler(message: types.Message):
+    print(message)
+    keyboard_markup = types.ReplyKeyboardRemove()
+    await message.answer("open_complain_chat dong", reply_markup=keyboard_markup)
 
 
 @dp.message_handler(commands='Close!')
@@ -32,7 +42,10 @@ async def close_cmd_handler(message: types.Message):
 
 
 @dp.message_handler(commands='menu')
-async def menu_cmd_handler(message: types.Message):
+async def menu_cmd_handler(message: types.Message, state: user_form):
+    async with state.proxy() as proxy:
+        await default_proxy(proxy)
+        await reset_proxy(proxy)
     await menu(message)
 
 
@@ -62,7 +75,10 @@ async def start_cmd_handler(message: types.Message, state: user_form):
                                         f"jika anda perlu bantuan saya, "
                                         f"Private Message ☺️ jangan disini yaaa.")
         if not message.from_user.is_bot:
-            await reset_proxy(proxy)
+            print(proxy)
+            await reset_proxy(proxy, kecuali=['complain_chat_user_id_target'])
+            if proxy['complain_chat_user_id_target']:
+                await message.answer(f"anda sekarang terhubung dengan ini orang")
             registered: User = await is_registered(message.from_user.id)
             if registered.ok:
                 await message.answer(f"selamat datang kembali "
@@ -311,8 +327,14 @@ async def all_message_handler(message: types.Message, state: user_form):
         if '#DAFTAR\n' and 'Kabupaten' and 'Kecamatan' and 'Nama Outlet' and 'Nomor MKios' in message.text:
             return await formulir_daftar(message)
         if message.text == "(_Belanja_)":
+            async with state.proxy() as proxy:
+                await default_proxy(proxy)
+                await reset_proxy(proxy)
             return await select_product(message)
         if message.text == "(_Komplain_)":
+            async with state.proxy() as proxy:
+                await default_proxy(proxy)
+                await reset_proxy(proxy)
             registered: User = await is_registered(message.from_user.id)
             if not registered.ok:
                 return await message.reply(
@@ -321,7 +343,7 @@ async def all_message_handler(message: types.Message, state: user_form):
                 )
             return await complain.choose_complain_menu(message)
         return await message.answer(
-            "Perintah tidak di temukan, Perlu bantuan ? /help",
+            f"Ada yang bisa dibantu {message.from_user.first_name}? Ketik ini ya /help",
             reply_markup=types.ReplyKeyboardRemove()
         )
 

@@ -2,7 +2,11 @@ from aiogram import types
 import time
 from uuid import uuid4
 import re
-from complain.digipos import digipos_complain_handler, digipos_complain_confirmation_handler
+from complain.digipos import (
+    digipos_complain_format_model_handler,
+    digipos_complain_confirmation_handler,
+    digipos_complain_choose_type_handler
+)
 
 
 class Complain:
@@ -14,6 +18,7 @@ class Complain:
     async def load(self):
         await self.choose_complain_handler()
         await digipos_complain_confirmation_handler(self.dp, self.state_obj)
+        await digipos_complain_choose_type_handler(self.dp, self.state_obj)
 
     @staticmethod
     async def choose_complain_menu(message: types.Message):
@@ -30,8 +35,7 @@ class Complain:
         )
 
     async def send(self, query, state):
-        from core import bot, group_id
-        from database import cnx
+        from core import bot, group_id, ComplainData
 
         complain_id = str(uuid4())
         registered = await self.state_obj['query']['is_registered'](query.from_user.id)
@@ -58,6 +62,7 @@ class Complain:
                f"Channel lain (UMB) : {self.complain['channel_lain']}\n" \
                f"Detil Masalah : {self.complain['detail']}\n\n\n" \
                f"Complain ID : {complain_id}\n" \
+               f"User First Name : {query.from_user.first_name}\n" \
                f"User Id : {registered.telegram_id} \n" \
                f"Type : DigiPos"
 
@@ -68,26 +73,26 @@ class Complain:
         row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
         keyboard_markup.row(*row_btns)
         aa = await bot.send_message(group_id, text=text, reply_markup=keyboard_markup)
-        # print(aa)
-        # print(registered, registered.telegram_id)
+        if self.complain['photo']:
+            for item in self.complain['photo']:
+                await bot.send_photo(group_id, item, reply_to_message_id=aa.message_id)
+
         await query.message.answer(
             "Tunggu Sebentar . . . ",
             reply_markup=types.ReplyKeyboardRemove()
         )
 
         # save to database
-        # cursor = cnx.cursor(buffered=True)
-        # query = ("INSERT INTO complain_digipos "
-        #          "(complain_id, kabupaten, telegram_id, kabupaten, kecamatan, "
-        #          "id_outlet, nama_outlet, no_mkios, no_pelanggan, tgl_transaksi, detail"
-        #          "pay_method, versi_apk_dipos, channel_lain, photo) "
-        #          f"VALUES ('{complain_id}', %(kabupaten)s, '{registered.telegram_id}', "
-        #          f"%(kecamatan)s, %(nama_outlet)s, %(nomor_mkios)s)")
-        # cursor.execute(query, self.complain)
-        # cnx.commit()
+        ComplainData(complain_id).new(
+            self.complain,
+            registered.telegram_id,
+            complain_type='digipos',
+            chat_id=query.message.chat.id,
+            message_id=query.message.message_id
+        )
         # end save to database
 
-        time.sleep(2)
+        time.sleep(1.5)
         return await query.message.answer(
             f"Teriamakasih, komplain {self.complain['type']} anda berhasil di kirim, tunggu response 1x24 jam :) \n\n\n"
             f"Complain Id : {complain_id}",
@@ -98,7 +103,7 @@ class Complain:
     async def handle_message_complain(message: types.Message, state, reset_proxy, default_proxy):
         async with state.proxy() as proxy:
             if proxy['complain_name'] == 'digipos':
-                return await digipos_complain_handler(message, state, reset_proxy, default_proxy)
+                return await digipos_complain_format_model_handler(message, state, reset_proxy, default_proxy)
             if proxy['complain_name'] == 'voucher_fisik':
                 return await message.answer('on development...')
 
@@ -107,11 +112,13 @@ class Complain:
         reset_proxy = self.state_obj['methods']['reset']
         default_proxy = self.state_obj['methods']['default']
 
-        @self.dp.callback_query_handler(text='complain_response_responded')  # if cb.data == 'no'
+        @self.dp.callback_query_handler(text='complain_response_responded')
+        @self.dp.callback_query_handler(text='open_chat')  # if cb.data == 'no'
         @self.dp.callback_query_handler(text='digipos')  # if cb.data == 'no'
         @self.dp.callback_query_handler(text='voucher_fisik')  # if cb.data == 'yes'
         async def choose_complain_callback_handler(query: types.CallbackQuery, state: user_form):
             answer_data = query.data
+            print(answer_data)
             async with state.proxy() as proxy:
                 await default_proxy(proxy, addtions={
                     'complain_name': answer_data
@@ -119,23 +126,67 @@ class Complain:
                 await reset_proxy(proxy)
                 proxy['complain_name'] = answer_data
             if answer_data == 'digipos':
+                await query.message.answer(
+                    "Kirim complain kesini dalam bentuk format berikut : \n\n",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
                 return await query.message.answer(
-                    "Jelaskan Detail Komplain Digipos : ",
+                    "Kabupaten : Kabupaten Anda\n"
+                    "Kecamatan : Kecamatan Anda\n"
+                    "ID Outlet : no outlet anda\n"
+                    "Nama Outlet : nama otlet\n"
+                    "No Mkios : no mkios\n"
+                    "No Pelanggan : no handphone\n"
+                    "Tgl Transaksi : waktu transaksi\n"
+                    "Metode Pembayaran : metode pembayawran\n"
+                    "Versi APK DigiPos : versi apk\n"
+                    "Channel lain (UMB) : channel lain\n"
+                    "Detil Masalah : Tulis masalah anda disini",
                     reply_markup=types.ReplyKeyboardRemove()
                 )
             if answer_data == 'complain_response_responded':
-                from core import bot
+                # asisten_arian_bot
+                from core import bot, ComplainData
+                index_chat_complain = query.message.text.find('\nComplain ID : ')
                 index_chat = query.message.text.find('\nUser Id')
                 telegram_id = int(re.search(r'\d+', query.message.text[index_chat:]).group())
-                await bot.send_message(
-                    telegram_id,
-                    f"Komplain Anda Sedang di Tinjau Oleh Admin : {query.from_user.first_name}."
-                )
-                # breakpoint()
-                return await query.message.answer(
-                    "Tindakan sudah dikirim ke user.",
-                    reply_markup=types.ReplyKeyboardRemove()
-                )
+                complain_id = query.message.text[index_chat_complain:].split('\n')[1].split('Complain ID : ')[1]
+                complain = ComplainData(complain_id).get()
+                user_complain = await bot.get_chat(complain.telegram_id)
+                if complain.telegram_id == query.from_user.id:
+                    return await query.answer("Anda tidak bisa meresponse komplainan anda sendiri")
+                if complain.status == 'unprogress':
+                    # async with state.proxy() as proxy:
+                    #     await default_proxy(proxy)
+                    #     await reset_proxy(proxy)
+                    #     proxy['complain_chat_user_id_target'] = str(user_complain.id)
+                    complain.set_status('onprogress', admin_id=query.from_user.id)
+                    # edit button
+                    if user_complain.username:
+                        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+                        text_and_data = (
+                            ('Interaksi Langsung', f'https://t.me/{user_complain.username}'),
+                        )
+
+                        row_btns = (types.InlineKeyboardButton(text, url=data) for text, data in text_and_data)
+                        keyboard_markup.row(*row_btns)
+                        await bot.edit_message_reply_markup(
+                            chat_id=query.message.chat.id,
+                            message_id=query.message.message_id,
+                            reply_markup=keyboard_markup
+                        )
+                    else:
+                        return await query.message.answer(
+                            "Privasi user tidak di buka, jadi tidak bisa interaksi langsung, \n"
+                            f"complain id: {complain_id}"
+                        )
+                    await bot.send_message(
+                        telegram_id,
+                        f"Komplain Anda Sedang di Tinjau Oleh Admin : {query.from_user.first_name}."
+                    )
+                    return await query.answer("Tindakan anda dikirim ke user")
+                admin_detail = await bot.get_chat(complain.handler_user_id)
+                return await query.answer(f'Komplain ini sudah di tangani sebelumnya oleh {admin_detail.first_name}')
             return await query.message.answer(
                 "Jelaskan Detail Komplain Voucer Fisik : ",
                 reply_markup=types.ReplyKeyboardRemove()

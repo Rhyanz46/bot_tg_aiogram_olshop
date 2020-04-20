@@ -59,6 +59,88 @@ class Order:
         }
 
 
+class ComplainData:
+    def __init__(self, complain_id):
+        self.complain_id = complain_id
+        self.id = None
+        self.status = None
+        self.kabupaten = None
+        self.telegram_id = None
+        self.kecamatan = None
+        self.id_outlet = None
+        self.nama_outlet = None
+        self.no_mkios = None
+        self.no_pelanggan = None
+        self.tgl_transaksi = None
+        self.detail = None
+        self.pay_method = None
+        self.versi_apk_dipos = None
+        self.channel_lain = None
+        self.photo = None
+        self.chat_id = None
+        self.message_id = None
+        self.handler_user_id = None
+        self.created = None
+
+    def new(self, data, telegram_id, complain_type=None, chat_id=None, message_id=None):
+        photo = None
+        if data['photo']:
+            photo = data['photo']
+            del data['photo']
+        if photo:
+            pass
+        if complain_type == 'digipos':
+            cursor = cnx.cursor(buffered=True)
+            query_save_complain = ("INSERT INTO complain_digipos "
+                                   "(complain_id, kabupaten, telegram_id, "
+                                   "kecamatan, id_outlet, nama_outlet, no_mkios, no_pelanggan, "
+                                   "tgl_transaksi, detail, pay_method, versi_apk_dipos, channel_lain, "
+                                   "chat_id, message_id) "
+                                   f'VALUES ("{self.complain_id}", %(kabupaten)s, {telegram_id}, %(kecamatan)s, '
+                                   f'%(id_outlet)s, %(nama_outlet)s, %(no_mkios)s,  %(no_pelanggan)s, '
+                                   f'%(tgl_transaksi)s, %(detail)s, %(pay_method)s, %(versi_apk_dipos)s, '
+                                   f'%(channel_lain)s, "{chat_id}", "{message_id}")')
+            cursor.execute(query_save_complain, data)
+            cnx.commit()
+        else:
+            raise KeyError
+
+    def set_status(self, status: str, admin_id: str):
+        cursor = cnx.cursor(buffered=True)
+        sql = f"UPDATE complain_digipos SET status = '{status}', handler_user_id = '{admin_id}' " \
+              f"WHERE complain_id = '{self.complain_id}'"
+        cursor.execute(sql)
+        cnx.commit()
+
+    def get(self):
+        cursor = cnx.cursor(buffered=True)
+        cursor.execute(f"SELECT * FROM complain_digipos where complain_id='{self.complain_id}'")
+        complain_result = cursor.fetchone()
+        if complain_result:
+            self.id = complain_result[0]
+            # self.complain_id = complain_result[1]
+            self.status = complain_result[2]
+            self.kabupaten = complain_result[3]
+            self.telegram_id = complain_result[4]
+            self.kecamatan = complain_result[5]
+            self.id_outlet = complain_result[6]
+            self.nama_outlet = complain_result[7]
+            self.no_mkios = complain_result[8]
+            self.no_pelanggan = complain_result[9]
+            self.tgl_transaksi = complain_result[10]
+            self.detail = complain_result[11]
+            self.pay_method = complain_result[12]
+            self.versi_apk_dipos = complain_result[13]
+            self.channel_lain = complain_result[14]
+            self.photo = complain_result[15]
+            self.chat_id = complain_result[16]
+            self.message_id = complain_result[17]
+            self.handler_user_id = complain_result[18]
+            self.created = complain_result[19]
+            return self
+        return self
+
+
 async def is_registered(id_user: int) -> User:
     cursor = cnx.cursor(buffered=True)
     cursor.execute(f"SELECT * FROM user where telegram_id={id_user}")
@@ -75,6 +157,7 @@ async def is_registered(id_user: int) -> User:
         user_result.tgl_registrasi = user[6]
         return user_result
     return user_result
+
 
 goods = {
     'buy_sp_reg': {
@@ -172,6 +255,7 @@ async def default_proxy(proxy, addtions=None) -> None:
     proxy.setdefault('kategori', False)
     proxy.setdefault('harus_ada_kategori', False)
     proxy.setdefault('joined', False)
+    proxy.setdefault('complain_chat_user_id_target', False)
     proxy.setdefault('beli_banyak', [])
     if addtions:
         for item in addtions:

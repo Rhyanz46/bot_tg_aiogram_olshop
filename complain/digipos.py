@@ -1,64 +1,6 @@
 from aiogram import types
 
 
-class DigiPosMenu:
-    def __init__(self):
-        self.value = None
-        self.is_return = False
-        self.something_to_return = None
-
-
-def choose_menu_not_text(selected: str, msg: types.Message, state) -> DigiPosMenu:
-    digipos_menu = DigiPosMenu()
-    if type(msg.text) == str:
-        async def output():
-            return await msg.answer(
-                "Pilih Menu, jangan masukkan text!",
-                reply_markup=types.ReplyKeyboardRemove()
-            )
-        digipos_menu.is_return = True
-        digipos_menu.something_to_return = output
-    return digipos_menu
-
-
-def keren(selected: str, msg: types.Message, state) -> DigiPosMenu:
-    digipos_menu = DigiPosMenu()
-    digipos_menu.value = msg.text
-    return digipos_menu
-
-
-async def digipos_complain_choose_type_handler(dp, state_obj):
-    user_form = state_obj['state']
-    reset_proxy = state_obj['methods']['reset']
-    default_proxy = state_obj['methods']['default']
-
-    @dp.callback_query_handler(text='do_complain_question')  # if cb.data == 'no'
-    @dp.callback_query_handler(text='do_complain_format')  # if cb.data == 'yes'
-    async def handler(query: types.CallbackQuery, state: user_form):
-        answer_data = query.data
-        async with state.proxy() as proxy:
-            # if not proxy.get('complain_digipos_detail'):
-            #     return await query.message.answer(
-            #         "Gagal, Ulangi Proses Komplain",
-            #         reply_markup=types.ReplyKeyboardRemove()
-            #     )
-            if answer_data == 'do_complain_question':
-                await default_proxy(proxy, addtions={
-                    'complain_name': 'digipos'
-                })
-                await reset_proxy(proxy)
-                proxy['complain_name'] = 'digipos'
-                return await query.message.answer(
-                    "Jelaskan Detail Komplain Digipos : ",
-                    reply_markup=types.ReplyKeyboardRemove()
-                )
-            if answer_data == 'do_complain_format':
-                return await query.message.answer(
-                    "Bentar",
-                    reply_markup=types.ReplyKeyboardRemove()
-                )
-
-
 async def digipos_complain_format_model_handler(message: types.Message, state, reset_proxy, default_proxy):
     from core import regex_special_character, is_registered, User
     from complain import upload_bukti_ask
@@ -199,6 +141,65 @@ async def digipos_complain_format_model_handler(message: types.Message, state, r
             "Terimakasih",
             reply_markup=types.ReplyKeyboardRemove()
         )
+
+
+# deprecated
+class DigiPosMenu:
+    def __init__(self):
+        self.value = None
+        self.is_return = False
+        self.something_to_return = None
+
+
+def choose_menu_not_text(selected: str, msg: types.Message, state) -> DigiPosMenu:
+    digipos_menu = DigiPosMenu()
+    if type(msg.text) == str:
+        async def output():
+            return await msg.answer(
+                "Pilih Menu, jangan masukkan text!",
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+        digipos_menu.is_return = True
+        digipos_menu.something_to_return = output
+    return digipos_menu
+
+
+def keren(selected: str, msg: types.Message, state) -> DigiPosMenu:
+    digipos_menu = DigiPosMenu()
+    digipos_menu.value = msg.text
+    return digipos_menu
+
+
+async def digipos_complain_choose_type_handler(dp, state_obj):
+    user_form = state_obj['state']
+    reset_proxy = state_obj['methods']['reset']
+    default_proxy = state_obj['methods']['default']
+
+    @dp.callback_query_handler(text='do_complain_question')  # if cb.data == 'no'
+    @dp.callback_query_handler(text='do_complain_format')  # if cb.data == 'yes'
+    async def handler(query: types.CallbackQuery, state: user_form):
+        answer_data = query.data
+        async with state.proxy() as proxy:
+            # if not proxy.get('complain_digipos_detail'):
+            #     return await query.message.answer(
+            #         "Gagal, Ulangi Proses Komplain",
+            #         reply_markup=types.ReplyKeyboardRemove()
+            #     )
+            if answer_data == 'do_complain_question':
+                await default_proxy(proxy, addtions={
+                    'complain_name': 'digipos'
+                })
+                await reset_proxy(proxy)
+                proxy['complain_name'] = 'digipos'
+                return await query.message.answer(
+                    "Jelaskan Detail Komplain Digipos : ",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
+            if answer_data == 'do_complain_format':
+                return await query.message.answer(
+                    "Bentar",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
 
 
 async def digipos_complain_question_model_handler(message: types.Message, state, reset_proxy, default_proxy):

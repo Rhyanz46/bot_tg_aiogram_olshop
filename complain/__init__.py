@@ -2,10 +2,8 @@ from aiogram import types
 import time
 from uuid import uuid4
 import re
-from complain.digipos import (
-    digipos_complain_format_model_handler,
-    digipos_complain_choose_type_handler
-)
+from complain.digipos import digipos_complain_format_model_handler
+from complain.voucer_fisik import voucer_fisik_complain_format_model_handler
 
 
 async def upload_bukti_ask(message, position=None, state=None, reset_proxy=None, default_proxy=None):
@@ -71,9 +69,8 @@ class Complain:
 
     async def load(self):
         await self.choose_complain_handler()
-        await self.digipos_complain_confirmation_handler()
+        await self.complain_confirmation_handler()
         await self.photo_complain_handler()
-        await digipos_complain_choose_type_handler(self.dp, self.state_obj)
 
     async def photo_complain_handler(self):
         user_form = self.state_obj['state']
@@ -86,7 +83,7 @@ class Complain:
             from complain import send_complain_or_not
             answer_data = query.data
             async with state.proxy() as proxy:
-                if not proxy.get('complain_digipos_detail'):
+                if not proxy.get('complain_name'):
                     await default_proxy(proxy)
                     await reset_proxy(proxy)
                     return await query.message.answer(
@@ -106,7 +103,7 @@ class Complain:
                     )
                     await send_complain_or_not(query.message, proxy)
 
-    async def digipos_complain_confirmation_handler(self):
+    async def complain_confirmation_handler(self):
         user_form = self.state_obj['state']
         reset_proxy = self.state_obj['methods']['reset']
         default_proxy = self.state_obj['methods']['default']
@@ -116,7 +113,7 @@ class Complain:
         async def handler(query: types.CallbackQuery, state: user_form):
             answer_data = query.data
             async with state.proxy() as proxy:
-                if not proxy.get('complain_digipos_detail'):
+                if not proxy.get('complain_name'):
                     await default_proxy(proxy)
                     await reset_proxy(proxy)
                     return await query.message.answer(
@@ -148,6 +145,21 @@ class Complain:
                             'photo': proxy['complain_photo']
                         }
                         return await complain.send(query, state)
+                    if proxy['complain_name'] == 'voucher_fisik':
+                        complain.complain = {
+                            'type': proxy['complain_name'],
+                            'kabupaten': proxy['complain_vf_kabupaten'],
+                            'kecamatan': proxy['complain_vf_kecamatan'],
+                            'nama_outlet': proxy['complain_vf_nama_outlet'],
+                            'id_digipos_outlet': proxy['complain_vf_id_digipos_outlet'],
+                            'nomor_pelanggan': proxy['complain_vf_nomor_pelanggan'],
+                            'serial_number': proxy['complain_vf_serial_number'],
+                            'tgl_inject_voucher': proxy['complain_vf_tgl_inject_voucher'],
+                            'paket': proxy['complain_vf_paket'],
+                            'masalah': proxy['complain_vf_masalah'],
+                            'photo': proxy['complain_photo']
+                        }
+                        return await complain.send(query, state)
 
     @staticmethod
     async def choose_complain_menu(message: types.Message):
@@ -164,7 +176,7 @@ class Complain:
         )
 
     async def send(self, query, state):
-        from core import bot, group_id, ComplainDigiposData
+        from core import bot, group_id, ComplainDigiposData, ComplainVoucherFisikData
 
         complain_id = str(uuid4())
         registered = await self.state_obj['query']['is_registered'](query.from_user.id)
@@ -178,23 +190,54 @@ class Complain:
         reset_proxy = self.state_obj['methods']['reset']
         async with state.proxy() as proxy:
             await reset_proxy(proxy)
-        text = f"Pelaporan Kendala Transaksi {self.complain['type']}\n\n" \
-               f"Kabupaten : {self.complain['kabupaten']}\n" \
-               f"Kecamatan : {self.complain['kecamatan']}\n" \
-               f"ID Outlet : {self.complain['id_outlet']}\n" \
-               f"Nama Outlet : {self.complain['nama_outlet']}\n" \
-               f"No Mkios : {self.complain['no_mkios']}\n" \
-               f"No Pelanggan : {self.complain['no_pelanggan']}\n" \
-               f"Tgl Transaksi : {self.complain['tgl_transaksi']}\n" \
-               f"Metode Pembayaran : {self.complain['pay_method']}\n" \
-               f"Versi APK DigiPos : {self.complain['versi_apk_dipos']}\n" \
-               f"Channel lain (UMB) : {self.complain['channel_lain']}\n" \
-               f"Detil Masalah : {self.complain['detail']}\n\n\n" \
-               f"Complain ID : {complain_id}\n" \
-               f"User First Name : {query.from_user.first_name}\n" \
-               f"User Id : {registered.telegram_id} \n" \
-               f"Type : DigiPos"
-
+        if self.complain['type'] == 'digipos':
+            text = f"Pelaporan Kendala Transaksi DigiPos\n\n" \
+                   f"Kabupaten : {self.complain['kabupaten']}\n" \
+                   f"Kecamatan : {self.complain['kecamatan']}\n" \
+                   f"ID Outlet : {self.complain['id_outlet']}\n" \
+                   f"Nama Outlet : {self.complain['nama_outlet']}\n" \
+                   f"No Mkios : {self.complain['no_mkios']}\n" \
+                   f"No Pelanggan : {self.complain['no_pelanggan']}\n" \
+                   f"Tgl Transaksi : {self.complain['tgl_transaksi']}\n" \
+                   f"Metode Pembayaran : {self.complain['pay_method']}\n" \
+                   f"Versi APK DigiPos : {self.complain['versi_apk_dipos']}\n" \
+                   f"Channel lain (UMB) : {self.complain['channel_lain']}\n" \
+                   f"Detil Masalah : {self.complain['detail']}\n\n\n" \
+                   f"Complain ID : {complain_id}\n" \
+                   f"User First Name : {query.from_user.first_name}\n" \
+                   f"User Id : {registered.telegram_id} \n" \
+                   f"Type : DigiPos"
+            # save to database
+            ComplainDigiposData(complain_id).new(
+                self.complain,
+                registered.telegram_id,
+                complain_type='digipos',
+                chat_id=query.message.chat.id,
+                message_id=query.message.message_id
+            )
+            # end save to database
+        else:  # voucher fisik
+            text = f"Pelaporan Kendala Transaksi Voucher Fisik\n\n" \
+                   f"Kabupaten : {self.complain['kabupaten']}\n" \
+                   f"Kecamatan : {self.complain['kecamatan']}\n" \
+                   f"Nama Outlet : {self.complain['nama_outlet']}\n" \
+                   f"ID Digipos Outlet : {self.complain['id_digipos_outlet']}\n" \
+                   f"Nomor Pelanggan : {self.complain['nomor_pelanggan']}\n" \
+                   f"Serial Number : {self.complain['serial_number']}\n" \
+                   f"Tanggal Inject Voucher : {self.complain['tgl_inject_voucher']}\n" \
+                   f"Paket : {self.complain['paket']}\n" \
+                   f"Masalah : {self.complain['masalah']}\n\n\n" \
+                   f"Complain ID : {complain_id}\n" \
+                   f"User First Name : {query.from_user.first_name}\n" \
+                   f"User Id : {registered.telegram_id} \n" \
+                   f"Type : Voucer Fisik"
+            ComplainVoucherFisikData(complain_id).new(
+                self.complain,
+                registered.telegram_id,
+                complain_type='voucher_fisik',
+                chat_id=query.message.chat.id,
+                message_id=query.message.message_id
+            )
         keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
         text_and_data = (
             ('Proses', 'complain_response_responded'),
@@ -211,16 +254,6 @@ class Complain:
             reply_markup=types.ReplyKeyboardRemove()
         )
 
-        # save to database
-        ComplainDigiposData(complain_id).new(
-            self.complain,
-            registered.telegram_id,
-            complain_type='digipos',
-            chat_id=query.message.chat.id,
-            message_id=query.message.message_id
-        )
-        # end save to database
-
         time.sleep(1.5)
         return await query.message.answer(
             f"Teriamakasih, komplain {self.complain['type']} anda berhasil di kirim, tunggu response 1x24 jam :) \n\n\n"
@@ -234,7 +267,7 @@ class Complain:
             if proxy['complain_name'] == 'digipos':
                 return await digipos_complain_format_model_handler(message, state, reset_proxy, default_proxy)
             if proxy['complain_name'] == 'voucher_fisik':
-                return await message.answer('on development...')
+                return await voucer_fisik_complain_format_model_handler(message, state, reset_proxy, default_proxy)
 
     async def choose_complain_handler(self):
         user_form = self.state_obj['state']
@@ -247,7 +280,6 @@ class Complain:
         @self.dp.callback_query_handler(text='voucher_fisik')  # if cb.data == 'yes'
         async def choose_complain_callback_handler(query: types.CallbackQuery, state: user_form):
             answer_data = query.data
-            print(answer_data)
             async with state.proxy() as proxy:
                 await default_proxy(proxy, addtions={
                     'complain_name': answer_data
@@ -273,14 +305,39 @@ class Complain:
                     "Detil Masalah : Tulis masalah anda disini",
                     reply_markup=types.ReplyKeyboardRemove()
                 )
+            if answer_data == 'voucher_fisik':
+                await query.message.answer(
+                    "Kirim complain kesini dalam bentuk format berikut : \n\n",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
+                return await query.message.answer(
+                    "Kabupaten : Kabupaten Anda\n"
+                    "Kecamatan : Kecamatan Anda\n"
+                    "Nama Outlet : nama otlet\n"
+                    "ID Digipos Outlet : no outlet anda\n"
+                    "Nomor Pelanggan : no handphone\n"
+                    "Serial Number (12Digit) : 1222222\n"
+                    "Tanggal Inject Voucher : 1-4-2020\n"
+                    "Paket : 4GB\n"
+                    "Masalah : Voucher Internet Fisik inject berhasil "
+                    "Kuota 1gb lokal tidak dapat digunakan\n",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
             if answer_data == 'complain_response_responded':
                 # asisten_arian_bot
-                from core import bot, ComplainDigiposData
-                index_chat_complain = query.message.text.find('\nComplain ID : ')
-                index_chat = query.message.text.find('\nUser Id')
-                telegram_id = int(re.search(r'\d+', query.message.text[index_chat:]).group())
-                complain_id = query.message.text[index_chat_complain:].split('\n')[1].split('Complain ID : ')[1]
-                complain = ComplainDigiposData(complain_id).get()
+                from core import bot, ComplainDigiposData, ComplainVoucherFisikData
+                index_complain_id = query.message.text.find('\nComplain ID : ')
+                index_user_id = query.message.text.find('\nUser Id')
+                index_complain_type = query.message.text.find('\nType')
+                user_telegram_id = int(re.search(r'\d+', query.message.text[index_user_id:]).group())
+                complain_id = query.message.text[index_complain_id:].split('\n')[1].split('Complain ID : ')[1]
+                complain_type = query.message.text[index_complain_type:].split('\n')[1].split('Type : ')[1].lower()
+
+                if complain_type == 'digipos':
+                    complain = ComplainDigiposData(complain_id).get()
+                else:  # Voucher Fisik
+                    complain = ComplainVoucherFisikData(complain_id).get()
+
                 user_complain = await bot.get_chat(complain.telegram_id)
                 if complain.telegram_id == query.from_user.id:
                     return await query.answer("Anda tidak bisa meresponse komplainan anda sendiri")
@@ -309,14 +366,10 @@ class Complain:
                             "Privasi user tidak di buka, jadi tidak bisa interaksi langsung, \n"
                             f"complain id: {complain_id}"
                         )
-                    await bot.send_message(
-                        telegram_id,
-                        f"Komplain Anda Sedang di Tinjau Oleh Admin : {query.from_user.first_name}."
-                    )
-                    return await query.answer("Tindakan anda dikirim ke user")
+
+                await bot.send_message(
+                    user_telegram_id,
+                    f"Komplain Anda Sedang di Tinjau Oleh Admin : {query.from_user.first_name}."
+                )
                 admin_detail = await bot.get_chat(complain.handler_user_id)
                 return await query.answer(f'Komplain ini sudah di tangani sebelumnya oleh {admin_detail.first_name}')
-            return await query.message.answer(
-                "Jelaskan Detail Komplain Voucer Fisik : ",
-                reply_markup=types.ReplyKeyboardRemove()
-            )

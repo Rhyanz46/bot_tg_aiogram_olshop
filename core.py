@@ -141,6 +141,84 @@ class ComplainDigiposData:
         return self
 
 
+class ComplainVoucherFisikData:
+    def __init__(self, complain_id):
+        self.id = None
+        self.complain_id = complain_id
+        self.telegram_id = None
+        self.status = None
+        self.kabupaten = None
+        self.kecamatan = None
+        self.nama_outlet = None
+        self.id_digipos_outlet = None
+        self.nomor_pelanggan = None
+        self.serial_number = None
+        self.tgl_inject_voucher = None
+        self.paket = None
+        self.masalah = None
+        self.photo = None
+        self.chat_id = None
+        self.message_id = None
+        self.handler_user_id = None
+        self.created = None
+
+    def new(self, data, telegram_id, complain_type=None, chat_id=None, message_id=None):
+        photo = None
+        if data['photo']:
+            photo = data['photo']
+            del data['photo']
+        if photo:
+            pass
+        if complain_type == 'voucher_fisik':
+            cursor = cnx.cursor(buffered=True)
+            query_save_complain = ("INSERT INTO complain_voucher_fisik "
+                                   "(complain_id, telegram_id, kabupaten, "
+                                   "kecamatan, nama_outlet, id_digipos_outlet, nomor_pelanggan, "
+                                   "serial_number, tgl_inject_voucher, paket, masalah, chat_id, "
+                                   "message_id) "
+                                   f'VALUES ("{self.complain_id}", {telegram_id}, %(kabupaten)s, %(kecamatan)s, '
+                                   f'%(nama_outlet)s, %(id_digipos_outlet)s, %(nomor_pelanggan)s, '
+                                   f'%(serial_number)s, %(tgl_inject_voucher)s, %(paket)s, %(masalah)s, '
+                                   f'"{chat_id}", "{message_id}")')
+            cursor.execute(query_save_complain, data)
+            cnx.commit()
+        else:
+            raise KeyError
+
+    def set_status(self, status: str, admin_id: str):
+        cursor = cnx.cursor(buffered=True)
+        sql = f"UPDATE complain_voucher_fisik SET status = '{status}', handler_user_id = '{admin_id}' " \
+              f"WHERE complain_id = '{self.complain_id}'"
+        cursor.execute(sql)
+        cnx.commit()
+
+    def get(self):
+        cursor = cnx.cursor(buffered=True)
+        cursor.execute(f"SELECT * FROM complain_voucher_fisik where complain_id='{self.complain_id}'")
+        complain_result = cursor.fetchone()
+        if complain_result:
+            self.id = complain_result[0]
+            # self.complain_id = complain_id
+            self.telegram_id = complain_result[2]
+            self.status = complain_result[3]
+            self.kabupaten = complain_result[4]
+            self.kecamatan = complain_result[5]
+            self.nama_outlet = complain_result[6]
+            self.id_digipos_outlet = complain_result[7]
+            self.nomor_pelanggan = complain_result[8]
+            self.serial_number = complain_result[9]
+            self.tgl_inject_voucher = complain_result[10]
+            self.paket = complain_result[11]
+            self.masalah = complain_result[12]
+            # self.photo = complain_result[13]
+            self.chat_id = complain_result[14]
+            self.message_id = complain_result[15]
+            self.handler_user_id = complain_result[16]
+            self.created = complain_result[17]
+            return self
+        return self
+
+
 async def is_registered(id_user: int) -> User:
     cursor = cnx.cursor(buffered=True)
     cursor.execute(f"SELECT * FROM user where telegram_id={id_user}")

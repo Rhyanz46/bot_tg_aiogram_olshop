@@ -57,3 +57,25 @@ CREATE TABLE complain_digipos(
     created TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
 );
+
+CREATE TABLE complain_voucher_fisik(
+    id INT NOT NULL AUTO_INCREMENT ,
+    complain_id VARCHAR(100) NULL ,
+    telegram_id INT(20) NULL ,
+    status VARCHAR(100) NULL DEFAULT 'unprogress' ,
+    kabupaten VARCHAR(100) NULL ,
+    kecamatan VARCHAR(100) NULL ,
+    nama_outlet VARCHAR(100) NULL ,
+    id_digipos_outlet VARCHAR(100) NULL ,
+    nomor_pelanggan VARCHAR(100) NULL ,
+    serial_number VARCHAR(100) NULL ,
+    tgl_inject_voucher VARCHAR(100) NULL ,
+    paket VARCHAR(100) NULL ,
+    masalah VARCHAR(100) NULL ,
+    photo VARCHAR(100) NULL ,
+    chat_id VARCHAR(100) NULL ,
+    message_id VARCHAR(100) NULL ,
+    handler_user_id VARCHAR(100) NULL ,
+    created TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);

@@ -27,62 +27,6 @@ def keren(selected: str, msg: types.Message, state) -> DigiPosMenu:
     return digipos_menu
 
 
-async def upload_bukti_ask(message, position=None, state=None, reset_proxy=None, default_proxy=None):
-    keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
-    text_and_data = (
-        ('Upload Foto Bukti', 'req_photo_digipos_complain'),
-        ('Tidak', 'no_req_photo_digipos_complain'),
-    )
-    row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
-    keyboard_markup.row(*row_btns)
-
-    return await message.answer(
-        "Jika km mempunyai bukti, silahkan di upload satu-satu,",
-        reply_markup=keyboard_markup
-    )
-
-
-async def send_complain_or_not(message: types.Message, proxy):
-    keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
-    text_and_data = (
-        ('Tambah Foto Bukti', 'req_photo_digipos_complain'),
-    )
-    row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
-    keyboard_markup.row(*row_btns)
-    text_and_data = (
-        ('Kirim Komplain', 'ya_digipos_complain'),
-        ('BATAL', 'batal_digipos_complain'),
-    )
-    row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
-    keyboard_markup.row(*row_btns)
-    return await message.answer(
-        "Anda yakin dengan komplain anda ? ",
-        reply_markup=keyboard_markup
-    )
-
-
-async def response_upload_bukti(message, proxy):
-    if not message.photo:
-        # from core import reset_proxy
-        # await reset_proxy(proxy)
-        return await message.answer(
-            "Upload Foto, bukan text",
-            reply_markup=types.ReplyKeyboardRemove()
-        )
-    if not proxy['complain_digipos_photo']:
-        proxy['complain_digipos_photo'] = [message.photo[-1].file_id]
-    else:
-        proxy['complain_digipos_photo'].append(message.photo[-1].file_id)
-    await message.answer(
-        "Dengan bukti yang anda kirim "
-        "ini akan membuat proses peninjauan menjadi lebih mudah.",
-        reply_markup=types.ReplyKeyboardRemove()
-    )
-    # sleep(2)
-    proxy['complain_digipos_photo_require'] = False
-    await send_complain_or_not(message, proxy)
-
-
 async def digipos_complain_choose_type_handler(dp, state_obj):
     user_form = state_obj['state']
     reset_proxy = state_obj['methods']['reset']
@@ -115,64 +59,9 @@ async def digipos_complain_choose_type_handler(dp, state_obj):
                 )
 
 
-async def digipos_complain_confirmation_handler(dp, state_obj):
-    user_form = state_obj['state']
-    reset_proxy = state_obj['methods']['reset']
-    default_proxy = state_obj['methods']['default']
-
-    @dp.callback_query_handler(text='req_photo_digipos_complain')  # if cb.data == 'no'
-    @dp.callback_query_handler(text='no_req_photo_digipos_complain')  # if cb.data == 'no'
-    @dp.callback_query_handler(text='ya_digipos_complain')  # if cb.data == 'no'
-    @dp.callback_query_handler(text='batal_digipos_complain')  # if cb.data == 'yes'
-    async def handler(query: types.CallbackQuery, state: user_form):
-        answer_data = query.data
-        async with state.proxy() as proxy:
-            if not proxy.get('complain_digipos_detail'):
-                return await query.message.answer(
-                    "Gagal, Ulangi Proses Komplain",
-                    reply_markup=types.ReplyKeyboardRemove()
-                )
-            if answer_data == 'req_photo_digipos_complain':
-                proxy['complain_digipos_photo_require'] = True
-                return await query.message.answer(
-                    "Silahkan upload gambar kesini.",
-                    reply_markup=types.ReplyKeyboardRemove()
-                )
-            if answer_data == 'no_req_photo_digipos_complain':
-                await query.message.answer(
-                    "Tidak perlu khawatir jika anda tidak memiliki bukti, kami akan berusaha meninjaunya",
-                    reply_markup=types.ReplyKeyboardRemove()
-                )
-                await send_complain_or_not(query.message, proxy)
-            if answer_data == 'batal_digipos_complain':
-                await reset_proxy(proxy)
-                return await query.message.answer(
-                    "Anda telah membatalkan proses complain",
-                    reply_markup=types.ReplyKeyboardRemove()
-                )
-            if answer_data == 'ya_digipos_complain':
-                from core import complain
-                complain.complain = {
-                # end save to database
-                    'type': 'digipos',
-                    'kabupaten': proxy['complain_digipos_kabupaten'],
-                    'kecamatan': proxy['complain_digipos_kecamatan'],
-                    'id_outlet': proxy['complain_digipos_id_outlet'],
-                    'nama_outlet': proxy['complain_digipos_nama_outlet'],
-                    'no_mkios': proxy['complain_digipos_no_mkios'],
-                    'no_pelanggan': proxy['complain_digipos_no_pelanggan'],
-                    'tgl_transaksi': proxy['complain_digipos_tgl_transaksi'],
-                    'detail': proxy['complain_digipos_detail'],
-                    'pay_method': proxy['complain_digipos_pay_method'],
-                    'versi_apk_dipos': proxy['complain_digipos_versi_apk_dipos'],
-                    'channel_lain': proxy['complain_digipos_channel_lain'],
-                    'photo': proxy['complain_digipos_photo']
-                }
-                return await complain.send(query, state)
-
-
 async def digipos_complain_format_model_handler(message: types.Message, state, reset_proxy, default_proxy):
     from core import regex_special_character, is_registered, User
+    from complain import upload_bukti_ask
     registered: User = await is_registered(
         message.from_user.id
     )
@@ -194,8 +83,8 @@ async def digipos_complain_format_model_handler(message: types.Message, state, r
             'complain_digipos_pay_method': None,
             'complain_digipos_versi_apk_dipos': None,
             'complain_digipos_channel_lain': None,
-            'complain_digipos_photo_require': False,
-            'complain_digipos_photo': None,
+            'complain_photo_require': False,
+            'complain_photo': None,
             'complain_digipos_valid': None
         })
         # print(message.text)
@@ -313,6 +202,7 @@ async def digipos_complain_format_model_handler(message: types.Message, state, r
 
 
 async def digipos_complain_question_model_handler(message: types.Message, state, reset_proxy, default_proxy):
+    from complain import upload_bukti_ask, response_upload_bukti
     from core import is_registered, User
     registered: User = await is_registered(
         message.from_user.id
@@ -335,8 +225,8 @@ async def digipos_complain_question_model_handler(message: types.Message, state,
             'complain_digipos_pay_method': None,
             'complain_digipos_versi_apk_dipos': None,
             'complain_digipos_channel_lain': None,
-            'complain_digipos_photo_require': False,
-            'complain_digipos_photo': None,
+            'complain_photo_require': False,
+            'complain_photo': None,
             'complain_digipos_progress': None
         })
 
@@ -386,14 +276,14 @@ async def digipos_complain_question_model_handler(message: types.Message, state,
                 'pesan': 'Channel Lain (UMB)'
             },
             11: {
-                'menu': 'complain_digipos_photo',
+                'menu': 'complain_photo',
                 'pesan': upload_bukti_ask,
                 'response': choose_menu_not_text
             }
         }
 
         # pencegahan
-        if proxy['complain_digipos_photo_require']:
+        if proxy['complain_photo_require']:
             return await response_upload_bukti(message, proxy)
         # pencegahan
 

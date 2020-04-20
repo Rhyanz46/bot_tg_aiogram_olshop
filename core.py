@@ -25,8 +25,8 @@ dp = Dispatcher(bot, storage=storage)
 regex_special_character = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
 
 # group_id = '-471742296' # bakuldata
-group_id = '-452027376'  # sumber notif
-# group_id = '-426065434'  # test
+# group_id = '-452027376'  # sumber notif
+group_id = '-426065434'  # test
 
 
 class User:
@@ -59,7 +59,7 @@ class Order:
         }
 
 
-class ComplainData:
+class ComplainDigiposData:
     def __init__(self, complain_id):
         self.complain_id = complain_id
         self.id = None
@@ -254,6 +254,8 @@ async def default_proxy(proxy, addtions=None) -> None:
     proxy.setdefault('proses_beli', False)
     proxy.setdefault('kategori', False)
     proxy.setdefault('harus_ada_kategori', False)
+    proxy.setdefault('joined', False)
+    proxy.setdefault('complain_photo_require', False)
     proxy.setdefault('joined', False)
     proxy.setdefault('complain_chat_user_id_target', False)
     proxy.setdefault('beli_banyak', [])

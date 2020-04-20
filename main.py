@@ -28,13 +28,6 @@ async def help_cmd_handler(message: types.Message, state: user_form):
                          "4.\tBantuan Ini\t\t\t\t\t\t\t: /help", reply_markup=keyboard_markup)
 
 
-@dp.message_handler(commands='open_complain_chat')
-async def open_complain_chat_handler(message: types.Message):
-    print(message)
-    keyboard_markup = types.ReplyKeyboardRemove()
-    await message.answer("open_complain_chat dong", reply_markup=keyboard_markup)
-
-
 @dp.message_handler(commands='Close!')
 async def close_cmd_handler(message: types.Message):
     keyboard_markup = types.ReplyKeyboardRemove()
@@ -75,10 +68,10 @@ async def start_cmd_handler(message: types.Message, state: user_form):
                                         f"jika anda perlu bantuan saya, "
                                         f"Private Message ☺️ jangan disini yaaa.")
         if not message.from_user.is_bot:
-            print(proxy)
-            await reset_proxy(proxy, kecuali=['complain_chat_user_id_target'])
-            if proxy['complain_chat_user_id_target']:
-                await message.answer(f"anda sekarang terhubung dengan ini orang")
+            await reset_proxy(proxy)
+            # await reset_proxy(proxy, kecuali=['complain_chat_user_id_target'])
+            # if proxy['complain_chat_user_id_target']:
+            #     await message.answer(f"anda sekarang terhubung dengan ini orang")
             registered: User = await is_registered(message.from_user.id)
             if registered.ok:
                 await message.answer(f"selamat datang kembali "
@@ -285,8 +278,8 @@ async def order_callback_handler(query: types.CallbackQuery, state: user_form):
 @dp.message_handler(content_types=types.ContentTypes.PHOTO)
 async def photo_handler(message: types.Message, state: user_form):
     async with state.proxy() as proxy:
-        if proxy.get('complain_digipos_photo_require'):
-            from complain.digipos import response_upload_bukti
+        if proxy.get('complain_photo_require'):
+            from complain import response_upload_bukti
             return await response_upload_bukti(message, proxy)
 
 

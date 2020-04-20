@@ -4,9 +4,63 @@ from uuid import uuid4
 import re
 from complain.digipos import (
     digipos_complain_format_model_handler,
-    digipos_complain_confirmation_handler,
     digipos_complain_choose_type_handler
 )
+
+
+async def upload_bukti_ask(message, position=None, state=None, reset_proxy=None, default_proxy=None):
+    keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+    text_and_data = (
+        ('Upload Foto Bukti', 'req_photo_complain'),
+        ('Tidak', 'no_req_photo_complain'),
+    )
+    row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
+    keyboard_markup.row(*row_btns)
+    return await message.answer(
+        "Jika km mempunyai bukti, silahkan di upload satu-satu,",
+        reply_markup=keyboard_markup
+    )
+
+
+async def send_complain_or_not(message: types.Message, proxy):
+    keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+    text_and_data = (
+        ('Tambah Foto Bukti', 'req_photo_complain'),
+    )
+    row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
+    keyboard_markup.row(*row_btns)
+    text_and_data = (
+        ('Kirim Komplain', 'ya_complain'),
+        ('BATAL', 'batal_complain'),
+    )
+    row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
+    keyboard_markup.row(*row_btns)
+    return await message.answer(
+        "Anda yakin dengan komplain anda ? ",
+        reply_markup=keyboard_markup
+    )
+
+
+async def response_upload_bukti(message, proxy):
+    if not message.photo:
+        # from core import reset_proxy
+        # await reset_proxy(proxy)
+        return await message.answer(
+            "Upload Foto, bukan text",
+            reply_markup=types.ReplyKeyboardRemove()
+        )
+    if not proxy['complain_photo']:
+        proxy['complain_photo'] = [message.photo[-1].file_id]
+    else:
+        proxy['complain_photo'].append(message.photo[-1].file_id)
+    await message.answer(
+        "Dengan bukti yang anda kirim "
+        "ini akan membuat proses peninjauan menjadi lebih mudah.",
+        reply_markup=types.ReplyKeyboardRemove()
+    )
+    # sleep(2)
+    proxy['complain_photo_require'] = False
+    await send_complain_or_not(message, proxy)
 
 
 class Complain:
@@ -17,8 +71,83 @@ class Complain:
 
     async def load(self):
         await self.choose_complain_handler()
-        await digipos_complain_confirmation_handler(self.dp, self.state_obj)
+        await self.digipos_complain_confirmation_handler()
+        await self.photo_complain_handler()
         await digipos_complain_choose_type_handler(self.dp, self.state_obj)
+
+    async def photo_complain_handler(self):
+        user_form = self.state_obj['state']
+        reset_proxy = self.state_obj['methods']['reset']
+        default_proxy = self.state_obj['methods']['default']
+
+        @self.dp.callback_query_handler(text='req_photo_complain')  # if cb.data == 'no'
+        @self.dp.callback_query_handler(text='no_req_photo_complain')  # if cb.data == 'no'
+        async def handler(query: types.CallbackQuery, state: user_form):
+            from complain import send_complain_or_not
+            answer_data = query.data
+            async with state.proxy() as proxy:
+                if not proxy.get('complain_digipos_detail'):
+                    await default_proxy(proxy)
+                    await reset_proxy(proxy)
+                    return await query.message.answer(
+                        "Gagal, Ulangi Proses Komplain",
+                        reply_markup=types.ReplyKeyboardRemove()
+                    )
+                if answer_data == 'req_photo_complain':
+                    proxy['complain_photo_require'] = True
+                    return await query.message.answer(
+                        "Silahkan upload gambar kesini.",
+                        reply_markup=types.ReplyKeyboardRemove()
+                    )
+                if answer_data == 'no_req_photo_complain':
+                    await query.message.answer(
+                        "Tidak perlu khawatir jika anda tidak memiliki bukti, kami akan berusaha meninjaunya",
+                        reply_markup=types.ReplyKeyboardRemove()
+                    )
+                    await send_complain_or_not(query.message, proxy)
+
+    async def digipos_complain_confirmation_handler(self):
+        user_form = self.state_obj['state']
+        reset_proxy = self.state_obj['methods']['reset']
+        default_proxy = self.state_obj['methods']['default']
+
+        @self.dp.callback_query_handler(text='ya_complain')  # if cb.data == 'no'
+        @self.dp.callback_query_handler(text='batal_complain')  # if cb.data == 'yes'
+        async def handler(query: types.CallbackQuery, state: user_form):
+            answer_data = query.data
+            async with state.proxy() as proxy:
+                if not proxy.get('complain_digipos_detail'):
+                    await default_proxy(proxy)
+                    await reset_proxy(proxy)
+                    return await query.message.answer(
+                        "Gagal, Ulangi Proses Komplain",
+                        reply_markup=types.ReplyKeyboardRemove()
+                    )
+                if answer_data == 'batal_complain':
+                    await reset_proxy(proxy)
+                    return await query.message.answer(
+                        "Anda telah membatalkan proses complain",
+                        reply_markup=types.ReplyKeyboardRemove()
+                    )
+                if answer_data == 'ya_complain':
+                    from core import complain
+                    if proxy['complain_name'] == 'digipos':
+                        complain.complain = {
+                            'type': proxy['complain_name'],
+                            'kabupaten': proxy['complain_digipos_kabupaten'],
+                            'kecamatan': proxy['complain_digipos_kecamatan'],
+                            'id_outlet': proxy['complain_digipos_id_outlet'],
+                            'nama_outlet': proxy['complain_digipos_nama_outlet'],
+                            'no_mkios': proxy['complain_digipos_no_mkios'],
+                            'no_pelanggan': proxy['complain_digipos_no_pelanggan'],
+                            'tgl_transaksi': proxy['complain_digipos_tgl_transaksi'],
+                            'detail': proxy['complain_digipos_detail'],
+                            'pay_method': proxy['complain_digipos_pay_method'],
+                            'versi_apk_dipos': proxy['complain_digipos_versi_apk_dipos'],
+                            'channel_lain': proxy['complain_digipos_channel_lain'],
+                            'photo': proxy['complain_photo']
+                        }
+                        return await complain.send(query, state)
 
     @staticmethod
     async def choose_complain_menu(message: types.Message):
@@ -35,7 +164,7 @@ class Complain:
         )
 
     async def send(self, query, state):
-        from core import bot, group_id, ComplainData
+        from core import bot, group_id, ComplainDigiposData
 
         complain_id = str(uuid4())
         registered = await self.state_obj['query']['is_registered'](query.from_user.id)
@@ -83,7 +212,7 @@ class Complain:
         )
 
         # save to database
-        ComplainData(complain_id).new(
+        ComplainDigiposData(complain_id).new(
             self.complain,
             registered.telegram_id,
             complain_type='digipos',
@@ -146,12 +275,12 @@ class Complain:
                 )
             if answer_data == 'complain_response_responded':
                 # asisten_arian_bot
-                from core import bot, ComplainData
+                from core import bot, ComplainDigiposData
                 index_chat_complain = query.message.text.find('\nComplain ID : ')
                 index_chat = query.message.text.find('\nUser Id')
                 telegram_id = int(re.search(r'\d+', query.message.text[index_chat:]).group())
                 complain_id = query.message.text[index_chat_complain:].split('\n')[1].split('Complain ID : ')[1]
-                complain = ComplainData(complain_id).get()
+                complain = ComplainDigiposData(complain_id).get()
                 user_complain = await bot.get_chat(complain.telegram_id)
                 if complain.telegram_id == query.from_user.id:
                     return await query.answer("Anda tidak bisa meresponse komplainan anda sendiri")

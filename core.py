@@ -26,8 +26,8 @@ regex_special_character = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
 
 bot_name = "Kirana"
 # group_id = '-471742296' # bakuldata
-# group_id = '-452027376'  # sumber notif
-group_id = '-426065434'  # test
+group_id = '-452027376'  # sumber notif
+# group_id = '-426065434'  # test
 
 
 class User:

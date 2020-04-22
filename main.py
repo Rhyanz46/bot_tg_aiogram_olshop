@@ -3,7 +3,7 @@ from core import (
     group_id, User, Order,
     order_barang, semua_produk_yg_ada_kategorinya,
     reset_proxy, default_proxy, complain,
-    user_form
+    user_form, bot_name
 )
 
 from aiogram import executor, types
@@ -74,13 +74,15 @@ async def start_cmd_handler(message: types.Message, state: user_form):
             #     await message.answer(f"anda sekarang terhubung dengan ini orang")
             registered: User = await is_registered(message.from_user.id)
             if registered.ok:
-                await message.answer(f"selamat datang kembali "
-                                     f"{message.from_user['first_name']} ☺️"
-                                     f", perlu bantuan? lakukan perintah /help ")
+                await message.answer(f"Ada yang bisa Kirana bantu? \n"
+                                     f"Silakan ketik apa yang Anda inginkan.\n"
+                                     f"Contoh : /help\n")
                 await menu(message)
             else:
                 keyboard_markup = types.ReplyKeyboardRemove()
-                await message.answer(f"Selamat Datang {message.from_user.first_name} ☺️",reply_markup=keyboard_markup)
+                await message.answer(f"Selamat Datang {message.from_user.first_name} ☺️\n\n"
+                                     f"Salam kenal aku {bot_name}. Selamat datang di Layanan Komplain Telkomsel Purwokerto "
+                                     f"Raya ", reply_markup=keyboard_markup)
                 await daftar(message)
         else:
             await message.answer("bot tidak di perbolehkan menggunakan ini , perlu bantuan? lakukakan perintah /help")
@@ -103,6 +105,12 @@ async def register_answer_callback_handler(query: types.CallbackQuery):
                                    "\nKecamatan :  kecamatan kamu"
                                    "\nNama Outlet :  nama outlet kamu"
                                    "\nNomor MKios : nomor mkios kamu")
+        await query.message.answer("Contohnya : ")
+        await query.message.answer("#DAFTAR\n"
+                                   "\nKabupaten : Cilacap"
+                                   "\nKecamatan : Cilacap Tengah"
+                                   "\nNama Outlet : Yahya Cell"
+                                   "\nNomor MKios : 081234567890")
     elif answer_data == 'tolak_daftar':
         keyboard_markup = types.ReplyKeyboardRemove()
         await bot.send_message(query.from_user.id, text=":( " ,reply_markup=keyboard_markup)

@@ -93,15 +93,10 @@ async def daftar(message: types.Message):
                              f"butuh bantuan ? lakukan perintah /help ",
                              reply_markup=keyboard_markup)
     else:
-        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=1)
         text_and_data = (
             ('Daftar!', 'daftar'),
-            ('No!', 'tolak_daftar'),
         )
         row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
         keyboard_markup.row(*row_btns)
-        keyboard_markup.add(
-            # url buttons have no callback data
-            types.InlineKeyboardButton('Baca Aturan', url='https://twitter.com'),
-        )
-        await message.reply("Silahkan Daftarkan Diri Anda", reply_markup=keyboard_markup)
+        await message.answer("Untuk pelayanan maksimal, tolong daftar dulu ya.. Klik Daftar dibawah ini", reply_markup=keyboard_markup)

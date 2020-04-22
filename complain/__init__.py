@@ -1,4 +1,5 @@
 from aiogram import types
+from aiogram.utils import exceptions
 import time
 from uuid import uuid4
 import re
@@ -15,7 +16,7 @@ async def upload_bukti_ask(message, position=None, state=None, reset_proxy=None,
     row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
     keyboard_markup.row(*row_btns)
     return await message.answer(
-        "Jika km mempunyai bukti, silahkan di upload satu-satu,",
+        "Kalau kamu punya bukti berupa screenshoot atau foto, tolong diupload ya biar Kirana mudah check kendalamu",
         reply_markup=keyboard_markup
     )
 
@@ -34,7 +35,7 @@ async def send_complain_or_not(message: types.Message, proxy):
     row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
     keyboard_markup.row(*row_btns)
     return await message.answer(
-        "Anda yakin dengan komplain anda ? ",
+        "Kamu udah yakin ya dengan komplain dan buktinya? Kalau udah klik kirim komplain",
         reply_markup=keyboard_markup
     )
 
@@ -52,8 +53,7 @@ async def response_upload_bukti(message, proxy):
     else:
         proxy['complain_photo'].append(message.photo[-1].file_id)
     await message.answer(
-        "Dengan bukti yang anda kirim "
-        "ini akan membuat proses peninjauan menjadi lebih mudah.",
+        "Dengan bukti yang kamu kirim ini akan membuat kirana mudah dalam proses peninjauan",
         reply_markup=types.ReplyKeyboardRemove()
     )
     # sleep(2)
@@ -171,7 +171,7 @@ class Complain:
         row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
         keyboard_markup.row(*row_btns)
         await message.reply(
-            "Pilih",
+            "Pilih salah satu ya.. nanti Kirana bantu",
             reply_markup=keyboard_markup
         )
 
@@ -230,7 +230,7 @@ class Complain:
                    f"Complain ID : {complain_id}\n" \
                    f"User First Name : {query.from_user.first_name}\n" \
                    f"User Id : {registered.telegram_id} \n" \
-                   f"Type : Voucer Fisik"
+                   f"Type : Voucher Fisik"
             ComplainVoucherFisikData(complain_id).new(
                 self.complain,
                 registered.telegram_id,
@@ -244,7 +244,11 @@ class Complain:
         )
         row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
         keyboard_markup.row(*row_btns)
-        aa = await bot.send_message(group_id, text=text, reply_markup=keyboard_markup)
+        try:
+            aa = await bot.send_message(group_id, text=text, reply_markup=keyboard_markup)
+        except exceptions.ChatNotFound:
+            raise exceptions.ChatNotFound("Akses ke grup belum ada")
+
         if self.complain['photo']:
             for item in self.complain['photo']:
                 await bot.send_photo(group_id, item, reply_to_message_id=aa.message_id)
@@ -256,7 +260,8 @@ class Complain:
 
         time.sleep(1.5)
         return await query.message.answer(
-            f"Teriamakasih, komplain {self.complain['type']} anda berhasil di kirim, tunggu response 1x24 jam :) \n\n\n"
+            f"Terimakasih {query.from_user.first_name}, komplain {self.complain['type']} berhasil dikirim, tunggu response Kirana 1x24jam ya\n\n"
+            f"Ohya user telegram kamu jangan diprivate ya biar nanti Kirana chat kamu\n\n"
             f"Complain Id : {complain_id}",
             reply_markup=types.ReplyKeyboardRemove()
         )
@@ -291,7 +296,7 @@ class Complain:
                     "Kirim complain kesini dalam bentuk format berikut : \n\n",
                     reply_markup=types.ReplyKeyboardRemove()
                 )
-                return await query.message.answer(
+                await query.message.answer(
                     "Kabupaten : Kabupaten Anda\n"
                     "Kecamatan : Kecamatan Anda\n"
                     "ID Outlet : no outlet anda\n"
@@ -305,12 +310,33 @@ class Complain:
                     "Detil Masalah : Tulis masalah anda disini",
                     reply_markup=types.ReplyKeyboardRemove()
                 )
+                return await query.message.answer(
+                    "Contoh pengisiannya :\n\n"
+                    "Kabupaten : Cilacap atau kabupaten kamu domisili\n"
+                    "Kecamatan : Cilacap Tengah atau kabupaten kamu domisili\n"
+                    "ID Outlet : 31000XXXX atau biasanya 10 angka tanya Sales dulu ya\n"
+                    "Nama Outlet : xxx Cell atau nama Kontermu ya\n"
+                    "No Mkios : 081234XXXXXX atau biasanya 11-12 angka\n"
+                    "No Pelanggan : 081234XXXXXX atau biasanya 11-12 angka kalau tidak ada diisi angka 0 aja ya\n"
+                    "Tgl Transaksi : 23/04/2020 atau tanggal transaksinya ya\n"
+                    "Metode Pembayaran : Linkaja atau NGRS, coba pilih salah satu\n"
+                    "Versi APK DigiPos : .84 kalau semisal pakai aplikasi Digipos kalau tidak pakai diisi angka 0 aja ya\n"
+                    "Channel lain (UMB) : UMB 181 kalau semisal pakai UMB\n"
+                    "Detil Masalah :\n"
+                    "Ceritain kendalamu contohnya kayak gini\n\n"
+                    "- Transaksi `Dalam Proses` lebih dari 1x24jam, saldo sudah terpotong\n"
+                    "- Transaksi `Gagal`, saldo sudah terpotong namun saldo belum kembali\n"
+                    "- Transaksi `Sukses`, Saldo sudah terpotong namun kuota belum masuk\n"
+                    "- Transaksi `Sekali` tapi motong Saldo `Dua Kali`\n"
+                    "- Atau ceritain kendalamu ya",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
             if answer_data == 'voucher_fisik':
                 await query.message.answer(
                     "Kirim complain kesini dalam bentuk format berikut : \n\n",
                     reply_markup=types.ReplyKeyboardRemove()
                 )
-                return await query.message.answer(
+                await query.message.answer(
                     "Kabupaten : Kabupaten Anda\n"
                     "Kecamatan : Kecamatan Anda\n"
                     "Nama Outlet : nama otlet\n"
@@ -322,6 +348,23 @@ class Complain:
                     "Masalah : Voucher Internet Fisik inject berhasil "
                     "Kuota 1gb lokal tidak dapat digunakan\n",
                     reply_markup=types.ReplyKeyboardRemove()
+                )
+                return await query.message.answer(
+                    "Contoh pengisiannya\n\n"
+                    "Kabupaten : Cilacap atau kabupaten kamu domisili\n"
+                    "Kecamatan : Cilacap Tengah atau kabupaten kamu domisili\n"
+                    "Nama Outlet : xxx Cell atau nama Kontermu ya\n"
+                    "ID Digipos Outlet : 31000XXXX atau biasanya 10 angka tanya Sales dulu ya\n"
+                    "Nomor Pelanggan : 081234XXXXXX atau biasanya 11-12 angka kalau tidak ada diisi angka 0 aja ya\n"
+                    "Serial Number (12Digit) : 9000 XXXX XXXX atau bisa liat nomor di belakang voucher ya\n"
+                    "Tanggal Inject Voucher : 23/04/2020 atau tanggal injectnya ya\n"
+                    "Paket : 4GB/6.5GB/8GB\n"
+                    "Detil Masalah :\n\n "
+                    "Ceritain kendalamu contohnya kayak gini :\n"
+                    "- Voucher Fisik inject Berhasil, Kuota Lokal tidak dapat digunakan\n"
+                    "- Voucher Fisik inject Berhasil, Kuota tidak masuk, cek *132# voucher sudah terpakai\n"
+                    "- Cek Kuota VF dan *132# tidak ada balasan atau balasannya NOK:ProductNotAvailable\n"
+                    "- Cek Regional anda padahal pelanggan ada dikonter"
                 )
             if answer_data == 'complain_response_responded':
                 # asisten_arian_bot

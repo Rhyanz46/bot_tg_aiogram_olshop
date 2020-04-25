@@ -25,7 +25,7 @@ dp = Dispatcher(bot, storage=storage)
 regex_special_character = re.compile('[@_!#$%^&*()<>?/\|}{~:]')
 
 bot_name = "Kirana"
-# group_id = '-471742296' # bakuldata
+# group_id = '-471742296' # bakuldata udah gk kepake
 group_id = '-452027376'  # sumber notif
 # group_id = '-426065434'  # test
 
@@ -91,7 +91,7 @@ class ComplainDigiposData:
         if photo:
             pass
         if complain_type == 'digipos':
-            cursor = cnx.cursor(buffered=True)
+            cursor = cnx.cursor()
             query_save_complain = ("INSERT INTO complain_digipos "
                                    "(complain_id, kabupaten, telegram_id, "
                                    "kecamatan, id_outlet, nama_outlet, no_mkios, no_pelanggan, "
@@ -108,14 +108,14 @@ class ComplainDigiposData:
             raise KeyError
 
     def set_status(self, status: str, admin_id: str):
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         sql = f"UPDATE complain_digipos SET status = '{status}', handler_user_id = '{admin_id}' " \
               f"WHERE complain_id = '{self.complain_id}'"
         cursor.execute(sql)
         cnx.commit()
 
     def get(self):
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute(f"SELECT * FROM complain_digipos where complain_id='{self.complain_id}'")
         complain_result = cursor.fetchone()
         if complain_result:
@@ -172,7 +172,7 @@ class ComplainVoucherFisikData:
         if photo:
             pass
         if complain_type == 'voucher_fisik':
-            cursor = cnx.cursor(buffered=True)
+            cursor = cnx.cursor()
             query_save_complain = ("INSERT INTO complain_voucher_fisik "
                                    "(complain_id, telegram_id, kabupaten, "
                                    "kecamatan, nama_outlet, id_digipos_outlet, nomor_pelanggan, "
@@ -189,14 +189,14 @@ class ComplainVoucherFisikData:
             raise KeyError
 
     def set_status(self, status: str, admin_id: str):
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         sql = f"UPDATE complain_voucher_fisik SET status = '{status}', handler_user_id = '{admin_id}' " \
               f"WHERE complain_id = '{self.complain_id}'"
         cursor.execute(sql)
         cnx.commit()
 
     def get(self):
-        cursor = cnx.cursor(buffered=True)
+        cursor = cnx.cursor()
         cursor.execute(f"SELECT * FROM complain_voucher_fisik where complain_id='{self.complain_id}'")
         complain_result = cursor.fetchone()
         if complain_result:
@@ -223,7 +223,7 @@ class ComplainVoucherFisikData:
 
 
 async def is_registered(id_user: int) -> User:
-    cursor = cnx.cursor(buffered=True)
+    cursor = cnx.cursor()
     cursor.execute(f"SELECT * FROM user where telegram_id={id_user}")
     user = cursor.fetchone()
     user_result = User()
@@ -313,7 +313,7 @@ def semua_produk_yg_ada_kategorinya() -> list:
 
 
 async def order_barang(order: Order):
-    cursor = cnx.cursor(buffered=True)
+    cursor = cnx.cursor()
     query = ("INSERT INTO orderan "
              "(telegram_id, kode_barang, qty) "
              "VALUES (%(telegram_id)s, %(kode_barang)s, %(qty)s)")

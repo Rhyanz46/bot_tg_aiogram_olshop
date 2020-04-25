@@ -320,7 +320,6 @@ async def all_message_handler(message: types.Message, state: user_form):
             async with state.proxy() as proxy:
                 proxy.setdefault('buy', 0)
         if message.chat.type == 'group':
-            print(message)
             return await message.answer(
                 f"Perintah ini tidak berlaku disini, jika anda perlu bantuan saya, "
                 f"Private Message ☺️"
@@ -350,6 +349,6 @@ async def all_message_handler(message: types.Message, state: user_form):
 
 
 if __name__ == '__main__':
-    import sentry_sdk
-    sentry_sdk.init("https://8d4c913cbef54ec4a8b8364f8f2c7fd7@o382669.ingest.sentry.io/5211893")
+    # import sentry_sdk
+    # sentry_sdk.init("https://8d4c913cbef54ec4a8b8364f8f2c7fd7@o382669.ingest.sentry.io/5211893")
     executor.start_polling(dp, skip_updates=False)

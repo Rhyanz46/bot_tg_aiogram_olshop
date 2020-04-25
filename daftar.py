@@ -37,49 +37,49 @@ async def formulir_daftar(message: types.Message):
     if not registered.ok:
         data: list = message.text.split('\n')
         form_data: dict = {"telegram_id": message.from_user.id}
-        valid: bool = True
         for item in data:
             if 'Kabupaten' in item:
-                kabupaten = item.replace('Kabupaten : ', '')
+                kabupaten = item.split('Kabupaten : ')
+                if len(kabupaten) == 1:
+                    return await message.answer(f"Masukkan format Kabupaten dengan benar")
+                kabupaten = kabupaten[1]
                 if regex_special_character.search(kabupaten):
                     karakter = kabupaten[regex_special_character.search(kabupaten).span()[0]]
-                    valid = False
-                    await message.answer(f"Kabupaten tidak boleh memiliki special karakter {karakter}")
+                    return await message.answer(f"Kabupaten tidak boleh memiliki special karakter {karakter}")
                 if len(kabupaten.strip()) > 149:
-                    valid = False
-                    await message.answer(f"Kabupaten tidak boleh lebih dari 149 karakter")
+                    return await message.answer(f"Kabupaten tidak boleh lebih dari 149 karakter")
                 form_data["kabupaten"] = kabupaten.strip().lower()
             if 'Kecamatan' in item:
-                kecamatan = item.replace('Kecamatan : ', '')
+                kecamatan = item.split('Kecamatan : ')
+                if len(kecamatan) == 1:
+                    return await message.answer(f"Masukkan format Kecamatan dengan benar")
+                kecamatan = kecamatan[1]
                 if len(kecamatan.strip()) > 149:
-                    valid = False
-                    await message.answer(f"Kecamatan tidak boleh lebih dari 149 karakter")
+                    return await message.answer(f"Kecamatan tidak boleh lebih dari 149 karakter")
                 form_data["kecamatan"] = kecamatan.strip().lower()
             if 'Nama Outlet' in item:
-                nama_oulet = item.replace('Nama Outlet : ', '')
+                nama_oulet = item.split('Nama Outlet : ')
+                if len(nama_oulet) == 1:
+                    return await message.answer(f"Masukkan format Nama Outlet dengan benar")
+                nama_oulet = nama_oulet[1]
                 if len(nama_oulet.strip()) > 149:
-                    valid = False
-                    await message.answer(f"Nama Outlet tidak boleh lebih dari 149 karakter")
+                    return await message.answer(f"Nama Outlet tidak boleh lebih dari 149 karakter")
                 form_data["nama_outlet"] = nama_oulet.strip()
             if 'Nomor MKios' in item:
-                nomor_mkios = item.replace('Nomor MKios : ', '')
+                nomor_mkios = item.split('Nomor MKios : ')
+                if len(nomor_mkios) == 1:
+                    return await message.answer(f"Masukkan format Nomor MKios dengan benar")
+                nomor_mkios = nomor_mkios[1]
                 if len(nomor_mkios.strip()) > 29:
-                    valid = False
-                    await message.answer(f"Nomor MKios tidak boleh lebih dari 29 karakter")
+                    return await message.answer(f"Nomor MKios tidak boleh lebih dari 29 karakter")
                 try:
                     nomor_mkios = int(nomor_mkios.strip())
                 except:
-                    await message.answer("mkios harusnya berupa nomor")
-                    valid = False
+                    return await message.answer("mkios harusnya berupa nomor")
                 form_data["nomor_mkios"] = nomor_mkios
-            if not valid:
-                form_data = {}
-        if not form_data:
-            await message.answer(f"Pastikan data anda benar")
-        else:
-            await add_user(form_data)
-            await message.answer(f"Terimakasih {message.from_user.first_name}, Pendaftaran Anda Berhasil :) ")
-            await menu(message)
+        await add_user(form_data)
+        await message.answer(f"Terimakasih {message.from_user.first_name}, Pendaftaran Anda Berhasil :) ")
+        await menu(message)
     else:
         return await message.answer("Sebelumnya Anda Sudah Terdaftar, Perlu bantuan ? /help",
                                     reply_markup=types.ReplyKeyboardRemove())

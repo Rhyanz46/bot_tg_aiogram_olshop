@@ -414,5 +414,5 @@ class Complain:
                     user_telegram_id,
                     f"Komplain Anda Sedang di Tinjau Oleh Admin : {query.from_user.first_name}."
                 )
-                admin_detail = await bot.get_chat(complain.handler_user_id)
-                return await query.answer(f'Komplain ini sudah di tangani sebelumnya oleh {admin_detail.first_name}')
+                # admin_detail = await bot.get_chat(complain.handler_user_id)
+                # return await query.answer(f'Komplain ini sudah di tangani sebelumnya oleh {admin_detail.first_name}')

@@ -97,7 +97,8 @@ async def registrasi_perdana_complain_format_model_handler(message: types.Messag
                     reply_markup=types.ReplyKeyboardRemove()
                 )
             return await message.answer(
-                "GAGAL, harus ada spasi di antar titik dua `(:)` atau mungkin anda tidak memasukkan info yang lengkap",
+                "GAGAL, Kirana Bingung, Format yang kamu masukkan salah,\n\n "
+                "Pastikan kamu telah mengikuti sesuai dengan contoh yang kirana berikan ya",
                 reply_markup=types.ReplyKeyboardRemove()
             )
         elif type(proxy['complain_rp_photo_ktp']) == bool and proxy['complain_rp_photo_ktp']:
@@ -111,6 +112,6 @@ async def registrasi_perdana_complain_format_model_handler(message: types.Messag
                 reply_markup=types.ReplyKeyboardRemove()
             )
         return await message.answer(
-            "Terimakasih",
+            "Inputan tidak sesuai",
             reply_markup=types.ReplyKeyboardRemove()
         )

@@ -222,6 +222,64 @@ class ComplainVoucherFisikData:
         return self
 
 
+class ComplainRegistrasiPerdanaData:
+    def __init__(self, complain_id):
+        self.id = None
+        self.complain_id = complain_id
+        self.telegram_id = None
+        self.status = None
+        self.msisdn_or_nomor_kartu = None
+        self.nama_lengkap = None
+        self.tempat_lahir = None
+        self.tanggal_lahir = None
+        self.nik = None
+        self.no_kk = None
+        self.chat_id = None
+        self.message_id = None
+        self.handler_user_id = None
+        self.created = None
+
+    def new(self, data, telegram_id, chat_id=None, message_id=None):
+        cursor = cnx.cursor()
+        query_save_complain = ("INSERT INTO complain_registrasi_perdana "
+                               "(complain_id, telegram_id, msisdn_or_nomor_kartu, "
+                               "nama_lengkap, tempat_lahir, tanggal_lahir, nik, "
+                               "no_kk, chat_id, message_id) "
+                               f'VALUES ("{self.complain_id}", {telegram_id}, %(msisdn_or_nomor_kartu)s, %(nama_lengkap)s, '
+                               f'%(tempat_lahir)s, %(tanggal_lahir)s, %(nik)s, '
+                               f'%(no_kk)s, "{chat_id}", "{message_id}")')
+        cursor.execute(query_save_complain, data)
+        cnx.commit()
+
+    def set_status(self, status: str, admin_id: str):
+        cursor = cnx.cursor()
+        sql = f"UPDATE complain_registrasi_perdana SET status = '{status}', handler_user_id = '{admin_id}' " \
+              f"WHERE complain_id = '{self.complain_id}'"
+        cursor.execute(sql)
+        cnx.commit()
+
+    def get(self):
+        cursor = cnx.cursor()
+        cursor.execute(f"SELECT * FROM complain_registrasi_perdana where complain_id='{self.complain_id}'")
+        complain_result = cursor.fetchone()
+        if complain_result:
+            self.id = complain_result[0]
+            self.telegram_id = complain_result[2]
+            self.status = complain_result[3]
+            self.msisdn_or_nomor_kartu = complain_result[4]
+            self.nama_lengkap = complain_result[5]
+            self.tempat_lahir = complain_result[6]
+            self.tanggal_lahir = complain_result[7]
+            self.nik = complain_result[8]
+            self.no_kk = complain_result[9]
+            self.chat_id = complain_result[10]
+            self.message_id = complain_result[11]
+            self.handler_user_id = complain_result[12]
+            self.created = complain_result[13]
+            return self
+        return self
+
+
 async def is_registered(id_user: int) -> User:
     cursor = cnx.cursor()
     cursor.execute(f"SELECT * FROM user where telegram_id={id_user}")

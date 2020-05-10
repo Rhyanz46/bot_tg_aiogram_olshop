@@ -58,21 +58,17 @@ CREATE TABLE complain_digipos(
     PRIMARY KEY (id)
 );
 
-CREATE TABLE complain_voucher_fisik(
+CREATE TABLE complain_registrasi_perdana(
     id INT NOT NULL AUTO_INCREMENT ,
     complain_id VARCHAR(100) NULL ,
     telegram_id INT(20) NULL ,
     status VARCHAR(100) NULL DEFAULT 'unprogress' ,
-    kabupaten VARCHAR(100) NULL ,
-    kecamatan VARCHAR(100) NULL ,
-    nama_outlet VARCHAR(100) NULL ,
-    id_digipos_outlet VARCHAR(100) NULL ,
-    nomor_pelanggan VARCHAR(100) NULL ,
-    serial_number VARCHAR(100) NULL ,
-    tgl_inject_voucher VARCHAR(100) NULL ,
-    paket VARCHAR(100) NULL ,
-    masalah VARCHAR(100) NULL ,
-    photo VARCHAR(100) NULL ,
+    msisdn_or_nomor_kartu VARCHAR(20) NULL ,
+    nama_lengkap VARCHAR(100) NULL ,
+    tempat_lahir VARCHAR(100) NULL ,
+    tanggal_lahir VARCHAR(29) NULL ,
+    nik VARCHAR(29) NULL ,
+    no_kk VARCHAR(29) NULL ,
     chat_id VARCHAR(100) NULL ,
     message_id VARCHAR(100) NULL ,
     handler_user_id VARCHAR(100) NULL ,

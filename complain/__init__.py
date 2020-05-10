@@ -5,18 +5,28 @@ from uuid import uuid4
 import re
 from complain.digipos import digipos_complain_format_model_handler
 from complain.voucer_fisik import voucer_fisik_complain_format_model_handler
+from complain.registrasi_perdana import registrasi_perdana_complain_format_model_handler
 
 
-async def upload_bukti_ask(message, position=None, state=None, reset_proxy=None, default_proxy=None):
+# upload proses 1
+async def upload_bukti_ask(message, position=None, state=None, reset_proxy=None, default_proxy=None, btn_msg=None,
+                           msg_ask_upload_or_not=None):
+    message_ask_upload_or_not = "Kalau kamu punya bukti berupa screenshoot atau foto, " \
+                            "tolong diupload ya biar Kirana mudah check kendalamu"
     keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+    button_msg = 'Upload Foto Bukti'
+    if btn_msg:
+        button_msg = btn_msg
+    if msg_ask_upload_or_not:
+        message_ask_upload_or_not = msg_ask_upload_or_not
     text_and_data = (
-        ('Upload Foto Bukti', 'req_photo_complain'),
+        (button_msg, 'req_photo_complain'),
         ('Tidak', 'no_req_photo_complain'),
     )
     row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
     keyboard_markup.row(*row_btns)
     return await message.answer(
-        "Kalau kamu punya bukti berupa screenshoot atau foto, tolong diupload ya biar Kirana mudah check kendalamu",
+        message_ask_upload_or_not,
         reply_markup=keyboard_markup
     )
 
@@ -40,25 +50,31 @@ async def send_complain_or_not(message: types.Message, proxy):
     )
 
 
-async def response_upload_bukti(message, proxy):
+async def response_upload_bukti(message, proxy, proxy_complain_photo_name=None, after=None, if_wrong=None):
     if not message.photo:
-        # from core import reset_proxy
-        # await reset_proxy(proxy)
-        return await message.answer(
-            "Upload Foto, bukan text",
+        if if_wrong:
+            await if_wrong()
+        else:
+            return await message.answer(
+                "Upload Foto, bukan text",
+                reply_markup=types.ReplyKeyboardRemove()
+            )
+    if not proxy_complain_photo_name:
+        if not proxy['complain_photo']:
+            proxy['complain_photo'] = [message.photo[-1].file_id]
+        else:
+            proxy['complain_photo'].append(message.photo[-1].file_id)
+        await message.answer(
+            "Dengan bukti yang kamu kirim ini akan membuat kirana mudah dalam proses peninjauan",
             reply_markup=types.ReplyKeyboardRemove()
         )
-    if not proxy['complain_photo']:
-        proxy['complain_photo'] = [message.photo[-1].file_id]
+        # sleep(2)
+        proxy['complain_photo_require'] = False
+        await send_complain_or_not(message, proxy)
     else:
-        proxy['complain_photo'].append(message.photo[-1].file_id)
-    await message.answer(
-        "Dengan bukti yang kamu kirim ini akan membuat kirana mudah dalam proses peninjauan",
-        reply_markup=types.ReplyKeyboardRemove()
-    )
-    # sleep(2)
-    proxy['complain_photo_require'] = False
-    await send_complain_or_not(message, proxy)
+        proxy[proxy_complain_photo_name] = message.photo[-1].file_id
+    if after:
+        await after()
 
 
 class Complain:
@@ -72,6 +88,7 @@ class Complain:
         await self.complain_confirmation_handler()
         await self.photo_complain_handler()
 
+    # upload proses 2
     async def photo_complain_handler(self):
         user_form = self.state_obj['state']
         reset_proxy = self.state_obj['methods']['reset']
@@ -160,7 +177,21 @@ class Complain:
                             'photo': proxy['complain_photo']
                         }
                         return await complain.send(query, state)
+                    if proxy['complain_name'] == 'registrasi_perdana':
+                        complain.complain = {
+                            'type': proxy['complain_name'],
+                            'msisdn_or_nomor_kartu': proxy['complain_rp_msisdn_or_nomor_kartu'],
+                            'nama_lengkap': proxy['complain_rp_nama_lengkap'],
+                            'tempat_lahir': proxy['complain_rp_tempat_lahir'],
+                            'tanggal_lahir': proxy['complain_rp_tanggal_lahir'],
+                            'nik': proxy['complain_rp_nik'],
+                            'no_kk': proxy['complain_rp_no_kk'],
+                            'photo_ktp': proxy['complain_rp_photo_ktp'],
+                            'photo_perdana': proxy['complain_rp_photo_perdana']
+                        }
+                        return await complain.send(query, state)
 
+    # complain proses 2
     @staticmethod
     async def choose_complain_menu(message: types.Message):
         keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
@@ -170,13 +201,18 @@ class Complain:
         )
         row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
         keyboard_markup.row(*row_btns)
+        text_and_data = (
+            ('Komplain Registrasi Perdana', 'registrasi_perdana'),
+        )
+        row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
+        keyboard_markup.row(*row_btns)
         await message.reply(
             "Pilih salah satu ya.. nanti Kirana bantu",
             reply_markup=keyboard_markup
         )
 
     async def send(self, query, state):
-        from core import bot, group_id, ComplainDigiposData, ComplainVoucherFisikData
+        from core import bot, group_id, ComplainDigiposData, ComplainVoucherFisikData, ComplainRegistrasiPerdanaData
 
         complain_id = str(uuid4())
         registered = await self.state_obj['query']['is_registered'](query.from_user.id)
@@ -190,6 +226,13 @@ class Complain:
         reset_proxy = self.state_obj['methods']['reset']
         async with state.proxy() as proxy:
             await reset_proxy(proxy)
+        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+        text_and_data = (
+            ('Proses', 'complain_response_responded'),
+        )
+        row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
+        keyboard_markup.row(*row_btns)
+        aa = None
         if self.complain['type'] == 'digipos':
             text = f"Pelaporan Kendala Transaksi DigiPos\n\n" \
                    f"Kabupaten : {self.complain['kabupaten']}\n" \
@@ -216,6 +259,36 @@ class Complain:
                 message_id=query.message.message_id
             )
             # end save to database
+        if self.complain['type'] == 'registrasi_perdana':
+            text = f"Pelaporan Kendala Registrasi Perdana\n\n" \
+                   f"MSISDN/Nomor Kartu : {self.complain['msisdn_or_nomor_kartu']}\n" \
+                   f"Nama Lengkap : {self.complain['nama_lengkap']}\n" \
+                   f"Tempat Lahir : {self.complain['tempat_lahir']}\n" \
+                   f"Tanggal Lahir : {self.complain['tanggal_lahir']}\n" \
+                   f"NIK : {self.complain['nik']}\n" \
+                   f"No KK : {self.complain['no_kk']}\n\n\n" \
+                   f"Complain ID : {complain_id}\n" \
+                   f"User First Name : {query.from_user.first_name}\n" \
+                   f"User Id : {registered.telegram_id} \n" \
+                   f"Type : Registrasi Perdana"
+            try:
+                aa = await bot.send_message(group_id, text=text, reply_markup=keyboard_markup)
+            except exceptions.ChatNotFound:
+                raise exceptions.ChatNotFound("Akses ke grup belum ada")
+            await bot.send_photo(
+                group_id, self.complain['photo_ktp'],
+                caption="ktp", reply_to_message_id=aa.message_id
+            )
+            await bot.send_photo(
+                group_id, self.complain['photo_perdana'],
+                caption="Kartu Perdana", reply_to_message_id=aa.message_id
+            )
+            ComplainRegistrasiPerdanaData(complain_id).new(
+                self.complain,
+                registered.telegram_id,
+                chat_id=query.message.chat.id,
+                message_id=query.message.message_id
+            )
         else:  # voucher fisik
             text = f"Pelaporan Kendala Transaksi Voucher Fisik\n\n" \
                    f"Kabupaten : {self.complain['kabupaten']}\n" \
@@ -238,18 +311,13 @@ class Complain:
                 chat_id=query.message.chat.id,
                 message_id=query.message.message_id
             )
-        keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
-        text_and_data = (
-            ('Proses', 'complain_response_responded'),
-        )
-        row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
-        keyboard_markup.row(*row_btns)
         try:
-            aa = await bot.send_message(group_id, text=text, reply_markup=keyboard_markup)
+            if not aa:
+                aa = await bot.send_message(group_id, text=text, reply_markup=keyboard_markup)
         except exceptions.ChatNotFound:
             raise exceptions.ChatNotFound("Akses ke grup belum ada")
 
-        if self.complain['photo']:
+        if self.complain.get('photo'):
             for item in self.complain['photo']:
                 await bot.send_photo(group_id, item, reply_to_message_id=aa.message_id)
 
@@ -266,6 +334,7 @@ class Complain:
             reply_markup=types.ReplyKeyboardRemove()
         )
 
+    # complain proses 5
     @staticmethod
     async def handle_message_complain(message: types.Message, state, reset_proxy, default_proxy):
         async with state.proxy() as proxy:
@@ -273,7 +342,10 @@ class Complain:
                 return await digipos_complain_format_model_handler(message, state, reset_proxy, default_proxy)
             if proxy['complain_name'] == 'voucher_fisik':
                 return await voucer_fisik_complain_format_model_handler(message, state, reset_proxy, default_proxy)
+            if proxy['complain_name'] == 'registrasi_perdana':
+                return await registrasi_perdana_complain_format_model_handler(message, state, reset_proxy, default_proxy)
 
+    # complain proses 3
     async def choose_complain_handler(self):
         user_form = self.state_obj['state']
         reset_proxy = self.state_obj['methods']['reset']
@@ -283,6 +355,7 @@ class Complain:
         @self.dp.callback_query_handler(text='open_chat')  # if cb.data == 'no'
         @self.dp.callback_query_handler(text='digipos')  # if cb.data == 'no'
         @self.dp.callback_query_handler(text='voucher_fisik')  # if cb.data == 'yes'
+        @self.dp.callback_query_handler(text='registrasi_perdana')  # if cb.data == 'yes'
         async def choose_complain_callback_handler(query: types.CallbackQuery, state: user_form):
             answer_data = query.data
             async with state.proxy() as proxy:
@@ -368,7 +441,7 @@ class Complain:
                 )
             if answer_data == 'complain_response_responded':
                 # asisten_arian_bot
-                from core import bot, ComplainDigiposData, ComplainVoucherFisikData
+                from core import bot, ComplainDigiposData, ComplainVoucherFisikData, ComplainRegistrasiPerdanaData
                 index_complain_id = query.message.text.find('\nComplain ID : ')
                 index_user_id = query.message.text.find('\nUser Id')
                 index_complain_type = query.message.text.find('\nType')
@@ -376,11 +449,22 @@ class Complain:
                 complain_id = query.message.text[index_complain_id:].split('\n')[1].split('Complain ID : ')[1]
                 complain_type = query.message.text[index_complain_type:].split('\n')[1].split('Type : ')[1].lower()
 
-                if complain_type == 'digipos':
-                    complain = ComplainDigiposData(complain_id).get()
-                else:  # Voucher Fisik
-                    complain = ComplainVoucherFisikData(complain_id).get()
+                handled = False
 
+                if complain_type == 'digipos':
+                    handled = True
+                    complain = ComplainDigiposData(complain_id).get()
+                elif complain_type == 'voucer fisik':
+                    handled = True
+                    complain = ComplainVoucherFisikData(complain_id).get()
+                elif complain_type == 'registrasi perdana':
+                    handled = True
+                    complain = ComplainRegistrasiPerdanaData(complain_id).get()
+                else:
+                    print(complain_id)
+
+                if not handled:
+                    return await query.answer("Masih dalam pengembangan")
                 user_complain = await bot.get_chat(complain.telegram_id)
                 if complain.telegram_id == query.from_user.id:
                     return await query.answer("Anda tidak bisa meresponse komplainan anda sendiri")
@@ -416,3 +500,32 @@ class Complain:
                 )
                 # admin_detail = await bot.get_chat(complain.handler_user_id)
                 # return await query.answer(f'Komplain ini sudah di tangani sebelumnya oleh {admin_detail.first_name}')
+            if answer_data == 'registrasi_perdana':
+                await query.message.answer(
+                    "Kirim complain kesini dalam bentuk format berikut : \n\n",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
+                await query.message.answer(
+                    "MSISDN/Nomor Kartu : Nomor yg mau diregistrasikan\n"
+                    "Nama Lengkap (Sesuai KK) : Nama Lengkapmu ya\n"
+                    "Tempat Lahir (Sesuai KK) : Kota Kelahiran\n"
+                    "Tanggal Lahir (Sesuai KK) : (DD/MM/YYYY)\n"
+                    "NIK (Sesuai KK) : (16Digit)\n"
+                    "No KK (Sesuai KK) : (16Digit)",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
+                await query.message.answer(
+                    "Contoh : \n\n",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
+                await query.message.answer(
+                    "MSISDN/Nomor Kartu : 08123456789\n"
+                    "Nama Lengkap : Kirana Baik Hati\n"
+                    "Tempat Lahir : Cilacap\n"
+                    "Tanggal Lahir : 30/04/2020\n"
+                    "NIK : 353xxxxxxxxx (16Digit)\n"
+                    "No KK : 353xxxxxxxxx (16Digit)"
+                )
+                return await query.message.answer(
+                    "Kemudian Siapkan Foto KTP & Foto Perdana ya agar KIRANA bantu Proses"
+                )

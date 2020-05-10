@@ -289,12 +289,45 @@ async def photo_handler(message: types.Message, state: user_form):
         if proxy.get('complain_photo_require'):
             from complain import response_upload_bukti
             return await response_upload_bukti(message, proxy)
+        if type(proxy.get('complain_rp_photo_ktp')) == bool and proxy.get('complain_rp_photo_ktp'):
+            from complain import response_upload_bukti
+
+            async def require_photo_perdana():
+                proxy['complain_rp_photo_perdana'] = True
+                return await message.answer(
+                    "Silahkan Upload Foto Perdana",
+                    reply_markup=types.ReplyKeyboardRemove()
+                )
+            return await response_upload_bukti(
+                message, proxy, after=require_photo_perdana,
+                proxy_complain_photo_name='complain_rp_photo_ktp'
+            )
+        if type(proxy.get('complain_rp_photo_perdana')) == bool and proxy.get('complain_rp_photo_perdana'):
+            from complain import response_upload_bukti
+
+            async def send_or_not():
+                keyboard_markup = types.InlineKeyboardMarkup(row_width=2)
+                text_and_data = (
+                    ('Kirim Komplain', 'ya_complain'),
+                    ('BATAL', 'batal_complain'),
+                )
+                row_btns = (types.InlineKeyboardButton(text, callback_data=data) for text, data in text_and_data)
+                keyboard_markup.row(*row_btns)
+                return await message.answer(
+                    "Kamu udah yakin? Kalau udah klik kirim komplain",
+                    reply_markup=keyboard_markup
+                )
+            return await response_upload_bukti(
+                message, proxy, after=send_or_not,
+                proxy_complain_photo_name='complain_rp_photo_perdana'
+            )
 
 
 @dp.message_handler(content_types=types.ContentTypes.TEXT)
 async def all_message_handler(message: types.Message, state: user_form):
     async with state.proxy() as proxy:
         await default_proxy(proxy)
+        # complain proses 4
         if proxy.get('complain_name'):
             registered: User = await is_registered(message.from_user.id)
             if not registered.ok:
@@ -341,6 +374,7 @@ async def all_message_handler(message: types.Message, state: user_form):
                     "Sorry, Kamu Belum Terdaftar 😝",
                     reply_markup=types.ReplyKeyboardRemove()
                 )
+            # complain proses 1
             return await complain.choose_complain_menu(message)
         return await message.answer(
             f"Ada yang bisa dibantu {message.from_user.first_name}? Ketik ini ya /help",

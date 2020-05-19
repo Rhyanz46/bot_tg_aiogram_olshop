@@ -259,7 +259,7 @@ class Complain:
                 message_id=query.message.message_id
             )
             # end save to database
-        if self.complain['type'] == 'registrasi_perdana':
+        elif self.complain['type'] == 'registrasi_perdana':
             text = f"Pelaporan Kendala Registrasi Perdana\n\n" \
                    f"MSISDN/Nomor Kartu : {self.complain['msisdn_or_nomor_kartu']}\n" \
                    f"Nama Lengkap : {self.complain['nama_lengkap']}\n" \

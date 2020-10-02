@@ -1,9 +1,10 @@
 from aiogram import types
 from core import regex_special_character, is_registered, User
-from database import cnx
+from database import DBConnection
 
 
 async def add_user(user: dict):
+    cnx = DBConnection.get_connection().connection()
     cursor = cnx.cursor(buffered=True)
     query = ("INSERT INTO user "
              "(telegram_id, telegram_username, kabupaten, kecamatan, nama_outlet, nomor_mkios) "

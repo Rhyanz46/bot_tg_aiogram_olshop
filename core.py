@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from config import BotConfig
-from database import cnx
+from database import DBConnection
 
 from complain import Complain
 
@@ -91,6 +91,7 @@ class ComplainDigiposData:
         if photo:
             pass
         if complain_type == 'digipos':
+            cnx = DBConnection.get_connection().connection()
             cursor = cnx.cursor()
             query_save_complain = ("INSERT INTO complain_digipos "
                                    "(complain_id, kabupaten, telegram_id, "
@@ -108,6 +109,7 @@ class ComplainDigiposData:
             raise KeyError
 
     def set_status(self, status: str, admin_id: str):
+        cnx = DBConnection.get_connection().connection()
         cursor = cnx.cursor()
         sql = f"UPDATE complain_digipos SET status = '{status}', handler_user_id = '{admin_id}' " \
               f"WHERE complain_id = '{self.complain_id}'"
@@ -115,6 +117,7 @@ class ComplainDigiposData:
         cnx.commit()
 
     def get(self):
+        cnx = DBConnection.get_connection().connection()
         cursor = cnx.cursor()
         cursor.execute(f"SELECT * FROM complain_digipos where complain_id='{self.complain_id}'")
         complain_result = cursor.fetchone()
@@ -172,6 +175,7 @@ class ComplainVoucherFisikData:
         if photo:
             pass
         if complain_type == 'voucher_fisik':
+            cnx = DBConnection.get_connection().connection()
             cursor = cnx.cursor()
             query_save_complain = ("INSERT INTO complain_voucher_fisik "
                                    "(complain_id, telegram_id, kabupaten, "
@@ -189,6 +193,7 @@ class ComplainVoucherFisikData:
             raise KeyError
 
     def set_status(self, status: str, admin_id: str):
+        cnx = DBConnection.get_connection().connection()
         cursor = cnx.cursor()
         sql = f"UPDATE complain_voucher_fisik SET status = '{status}', handler_user_id = '{admin_id}' " \
               f"WHERE complain_id = '{self.complain_id}'"
@@ -196,6 +201,7 @@ class ComplainVoucherFisikData:
         cnx.commit()
 
     def get(self):
+        cnx = DBConnection.get_connection().connection()
         cursor = cnx.cursor()
         cursor.execute(f"SELECT * FROM complain_voucher_fisik where complain_id='{self.complain_id}'")
         complain_result = cursor.fetchone()
@@ -240,6 +246,7 @@ class ComplainRegistrasiPerdanaData:
         self.created = None
 
     def new(self, data, telegram_id, chat_id=None, message_id=None):
+        cnx = DBConnection.get_connection().connection()
         cursor = cnx.cursor()
         query_save_complain = ("INSERT INTO complain_registrasi_perdana "
                                "(complain_id, telegram_id, msisdn_or_nomor_kartu, "
@@ -252,6 +259,7 @@ class ComplainRegistrasiPerdanaData:
         cnx.commit()
 
     def set_status(self, status: str, admin_id: str):
+        cnx = DBConnection.get_connection().connection()
         cursor = cnx.cursor()
         sql = f"UPDATE complain_registrasi_perdana SET status = '{status}', handler_user_id = '{admin_id}' " \
               f"WHERE complain_id = '{self.complain_id}'"
@@ -259,6 +267,7 @@ class ComplainRegistrasiPerdanaData:
         cnx.commit()
 
     def get(self):
+        cnx = DBConnection.get_connection().connection()
         cursor = cnx.cursor()
         cursor.execute(f"SELECT * FROM complain_registrasi_perdana where complain_id='{self.complain_id}'")
         complain_result = cursor.fetchone()
@@ -281,6 +290,7 @@ class ComplainRegistrasiPerdanaData:
 
 
 async def is_registered(id_user: int) -> User:
+    cnx = DBConnection.get_connection().connection()
     cursor = cnx.cursor()
     cursor.execute(f"SELECT * FROM user where telegram_id={id_user}")
     user = cursor.fetchone()
@@ -371,6 +381,7 @@ def semua_produk_yg_ada_kategorinya() -> list:
 
 
 async def order_barang(order: Order):
+    cnx = DBConnection.get_connection().connection()
     cursor = cnx.cursor()
     query = ("INSERT INTO orderan "
              "(telegram_id, kode_barang, qty) "

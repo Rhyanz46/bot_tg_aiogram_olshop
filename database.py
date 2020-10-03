@@ -37,6 +37,3 @@ class DBConnection:
         if not DBConnection.database:
             DBConnection.database = Database()
         return DBConnection.database
-
-
-breakpoint()

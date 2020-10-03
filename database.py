@@ -8,18 +8,24 @@ class Database:
     cnx_inside: bool = None
 
     def __init__(self) -> None:
+        self.create_connection()
+
+    @classmethod
+    def create_connection(cls):
         Database.cnx_inside = mysql.connector.connect(
             user=db_conf.user,
             password=db_conf.pw,
             host=db_conf.host,
             database=db_conf.db
         )
-        print("Connected")
 
-    @classmethod
-    def connection(cls):
-        print("get data")
-        return Database.cnx_inside
+    def connection(self):
+        try:
+            return Database.cnx_inside
+        except:
+            self.create_connection()
+            return Database.cnx_inside
+
 
 
 class DBConnection:

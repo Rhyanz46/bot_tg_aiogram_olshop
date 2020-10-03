@@ -21,10 +21,9 @@ class Database:
         )
 
     def connection(self):
-        try:
-            Database.cnx_inside.cursor()
+        if Database.cnx_inside.is_connected():
             return Database.cnx_inside
-        except:
+        else:
             print("reconnected")
             self.create_connection()
             return Database.cnx_inside

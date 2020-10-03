@@ -12,6 +12,7 @@ class Database:
 
     @classmethod
     def create_connection(cls):
+        print("connected")
         Database.cnx_inside = mysql.connector.connect(
             user=db_conf.user,
             password=db_conf.pw,
@@ -21,11 +22,12 @@ class Database:
 
     def connection(self):
         try:
+            Database.cnx_inside.cursor()
             return Database.cnx_inside
         except:
+            print("reconnected")
             self.create_connection()
             return Database.cnx_inside
-
 
 
 class DBConnection:
@@ -36,3 +38,6 @@ class DBConnection:
         if not DBConnection.database:
             DBConnection.database = Database()
         return DBConnection.database
+
+
+breakpoint()
